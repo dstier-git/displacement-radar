@@ -2,13 +2,15 @@
 
 ## Overview
 
-Apollo Hackathon is a prospecting and outreach application designed to help companies identify weaknesses in competitor offerings and turn those insights into targeted sales opportunities.
-
-The platform works by analyzing competing companies, surfacing discrepancies or flaws in their products, services, or market positioning, and then using those findings to help generate persuasive outbound emails aimed at decision-makers such as CFOs, CTOs, and other high-level stakeholders. The goal is to help users position Apollo as a stronger alternative in a thoughtful and data-informed way.
+Made during the Apollo x Google Cloud Hackathon on 4/16/2026
 
 ---
 
 ## Core Idea
+
+The platform works by analyzing competing companies, surfacing discrepancies or flaws in their products, services, or market positioning, and then using those findings to help generate persuasive outbound emails aimed at decision-makers such as CFOs, CTOs, and other high-level stakeholders. The goal is to help users position Apollo as a stronger alternative in a thoughtful and data-informed way.
+
+## Workflow
 
 The application is built around a simple workflow:
 
@@ -115,7 +117,7 @@ This project is centered around:
 
 ## Goal
 
-The ultimate goal of Apollo Hackathon is to help users:
+The ultimate goal of this is to help companies:
 - identify opportunities in competitor weaknesses
 - better understand their market landscape
 - generate persuasive targeted outreach faster
@@ -128,7 +130,6 @@ The ultimate goal of Apollo Hackathon is to help users:
 Potential next steps could include:
 - improving the competitor discovery algorithm
 - increasing the number of companies handled automatically
-- refining the relevance and accuracy of scraped insights
-- enhancing visualization dashboards
-- adding deeper personalization for generated emails
+- refining the relevance and accuracy of scraped insights to match present-day situations
+- adding deeper personalization for generated emails based on certain companies
 - expanding integrations beyond Gmail
