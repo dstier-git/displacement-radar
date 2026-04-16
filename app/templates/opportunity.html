@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="/" class="back">← Dashboard</a>
+<section class="panel">
+  <span class="score">{{ opportunity.fit_score }}</span>
+  <h2>{{ opportunity.account.name }}</h2>
+  <p>{{ opportunity.displacement_rationale }}</p>
+  <dl>
+    <dt>Domain</dt><dd>{{ opportunity.account.domain or "Unknown" }}</dd>
+    <dt>Industry</dt><dd>{{ opportunity.account.industry or "Unknown" }}</dd>
+    <dt>Employees</dt><dd>{{ opportunity.account.employee_count or "Unknown" }}</dd>
+  </dl>
+  {% if signal %}
+    <h3>Trigger</h3>
+    <p><strong>{{ signal.headline }}</strong></p>
+    <p>{{ signal.recommended_angle }}</p>
+  {% endif %}
+</section>
+
+<section class="grid two">
+  <article class="panel">
+    <h2>Apollo contacts</h2>
+    {% for contact in opportunity.contacts %}
+      <div class="row">
+        <strong>{{ contact.full_name }}</strong>
+        <span>{{ contact.title }}</span>
+        <small>{{ contact.email_status or "unknown email" }}</small>
+      </div>
+    {% endfor %}
+  </article>
+  <article class="panel">
+    <h2>Campaigns</h2>
+    {% for campaign in campaigns %}
+      <a class="card link-card" href="/campaigns/{{ campaign.id }}">{{ campaign.subject }}</a>
+    {% endfor %}
+  </article>
+</section>
+{% endblock %}

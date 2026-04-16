@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="/" class="back">← Dashboard</a>
+<section class="panel report-actions">
+  <div>
+    <h2>Rendered competitive landscape report</h2>
+    <p class="muted">Graphs render below without external JavaScript. Use the markdown export for Mermaid-compatible docs or GitHub.</p>
+  </div>
+  <a class="button-link" href="/reports/competitive-landscape.md">Markdown export</a>
+</section>
+<section class="panel report-body">
+  {{ report_html | safe }}
+</section>
+{% endblock %}

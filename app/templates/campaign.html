@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="/" class="back">← Dashboard</a>
+<section class="panel">
+  <h2>{{ campaign.subject }}</h2>
+  {% if opportunity %}<p class="muted">Target: {{ opportunity.account.name }}</p>{% endif %}
+  {% if signal %}<p class="muted">Signal: {{ signal.headline }}</p>{% endif %}
+</section>
+<section class="grid two">
+  <article class="panel stack">
+    <h3>Email</h3>
+    <pre>{{ campaign.email_body }}</pre>
+    <h3>LinkedIn</h3>
+    <pre>{{ campaign.linkedin_note }}</pre>
+    <h3>Call opener</h3>
+    <pre>{{ campaign.call_opener }}</pre>
+  </article>
+  <article class="panel stack">
+    <h3>Apollo Claude MCP handoff</h3>
+    <p class="muted">Paste this into Claude with the Apollo connector enabled. Draft-only by default.</p>
+    <pre>{{ campaign.apollo_claude_prompt }}</pre>
+    <form action="/campaigns/{{ campaign.id }}/apollo-claude-prompt" method="post">
+      <button type="submit">View raw prompt</button>
+    </form>
+  </article>
+</section>
+{% endblock %}

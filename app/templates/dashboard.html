@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="grid metrics">
+  <article><strong>{{ competitors|length }}</strong><span>Competitors</span></article>
+  <article><strong>{{ signals|length }}</strong><span>Signals</span></article>
+  <article><strong>{{ opportunities|length }}</strong><span>Opportunities</span></article>
+  <article><strong>{{ campaigns|length }}</strong><span>Campaign drafts</span></article>
+</section>
+
+<section class="panel action-panel">
+  <div>
+    <h2>Markdown report</h2>
+    <p class="muted">Generate a competitive landscape report with Mermaid graphs and last-30-day movement.</p>
+  </div>
+  <a class="button-link" href="/reports/competitive-landscape" target="_blank" rel="noreferrer">Open rendered report</a>
+</section>
+
+<section class="panel">
+  <h2>Add competitor watch</h2>
+  <form class="stack" action="/competitors" method="post">
+    <div class="form-grid">
+      <label>Name<input name="name" placeholder="Competitor name" required></label>
+      <label>Category<input name="category" placeholder="Sales engagement"></label>
+      <label>Apollo technology UID<input name="technology_uid" placeholder="Optional Apollo tech UID"></label>
+      <label>Customer domains<input name="customer_domains" placeholder="acme.com, example.com"></label>
+    </div>
+    <label>Positioning<textarea name="product_positioning" placeholder="Why we win against this competitor"></textarea></label>
+    <button type="submit">Add watch</button>
+  </form>
+</section>
+
+<section class="grid two">
+  <article class="panel">
+    <h2>Competitor signals</h2>
+    {% if signals %}
+      <div class="cards">
+        {% for signal in signals[:8] %}
+          <div class="card">
+            <span class="badge {{ signal.severity.value }}">{{ signal.severity.value }}</span>
+            <h3>{{ signal.headline }}</h3>
+            <p>{{ signal.pain_hypothesis }}</p>
+            <small>{{ signal.competitor_name }} · {{ signal.type.value.replace('_', ' ') }} · {{ signal.urgency_score }}/100</small>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No signals yet. Run a scan to generate demo signals.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel">
+    <h2>Ranked opportunities</h2>
+    {% if opportunities %}
+      <div class="cards">
+        {% for opportunity in opportunities[:10] %}
+          <a class="card link-card" href="/opportunities/{{ opportunity.id }}">
+            <span class="score">{{ opportunity.fit_score }}</span>
+            <h3>{{ opportunity.account.name }}</h3>
+            <p>{{ opportunity.displacement_rationale }}</p>
+            <small>{{ opportunity.contacts|length }} contacts · {{ opportunity.account.domain or "No domain" }}</small>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No opportunities yet.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="panel">
+  <h2>Campaign drafts</h2>
+  {% if campaigns %}
+    <div class="cards three">
+      {% for campaign in campaigns[:9] %}
+        <a class="card link-card" href="/campaigns/{{ campaign.id }}">
+          <h3>{{ campaign.subject }}</h3>
+          <p>{{ campaign.email_body[:180] }}...</p>
+          <small>{{ campaign.evidence_urls|length }} evidence links</small>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">Campaign drafts appear after a scan.</p>
+  {% endif %}
+</section>
+{% endblock %}

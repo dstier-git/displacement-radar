@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or "Competitor Displacement Agent" }}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Apollo × Google Cloud Hackathon</p>
+      <h1>Competitor Displacement Agent</h1>
+      <p>Turns competitor bad days into draft-only, evidence-backed pipeline plays.</p>
+    </div>
+    <form action="/scan" method="post">
+      <button class="primary" type="submit">Run scan</button>
+    </form>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
