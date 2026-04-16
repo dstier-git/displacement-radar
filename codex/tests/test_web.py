@@ -63,9 +63,32 @@ def test_dashboard_company_scan_email_and_report_routes(tmp_path: Path) -> None:
         assert dashboard.status_code == 200
         assert "Company-first setup" in dashboard.text
         assert "Email drafts" in dashboard.text
+        assert "/signals/" in dashboard.text
         assert "/reports/competitive-landscape" in dashboard.text
 
         opportunity = agent.repository.list_opportunities()[0]
+        signal = agent.repository.list_signals()[0]
+        signal_page = client.get(f"/signals/{signal.id}")
+        assert signal_page.status_code == 200
+        assert "Find impacted customers" in signal_page.text
+        assert opportunity.account.name in signal_page.text
+
+        signal_prospects = client.post(f"/signals/{signal.id}/prospects", follow_redirects=False)
+        assert signal_prospects.status_code == 303
+        assert len(agent.repository.list_opportunities(signal_id=signal.id)) == 1
+
+        signal_email = client.post(
+            f"/signals/{signal.id}/emails",
+            data={"selected_contact_keys": [f"{opportunity.id}::{opportunity.contacts[0].id}"]},
+            follow_redirects=False,
+        )
+        assert signal_email.status_code == 303
+        assert len(agent.repository.list_campaigns(opportunity_id=opportunity.id)) == 1
+
+        signal_page = client.get(f"/signals/{signal.id}")
+        assert "Copy all" in signal_page.text
+        assert "Outreach drafts" in signal_page.text
+
         prospects = client.post(f"/opportunities/{opportunity.id}/prospects", follow_redirects=False)
         assert prospects.status_code == 303
         opportunity = agent.repository.get_opportunity(opportunity.id)

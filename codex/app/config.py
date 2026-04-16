@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     claude_mcp_config: str | None = Field(default=None, alias="CLAUDE_MCP_CONFIG")
     claude_max_budget_usd: float | None = Field(default=0.25, alias="CLAUDE_MAX_BUDGET_USD")
     claude_timeout_seconds: int = Field(default=45, alias="CLAUDE_TIMEOUT_SECONDS")
+    claude_draft_emails: bool = Field(default=False, alias="CLAUDE_DRAFT_EMAILS")
     demo_mode: bool = Field(default=True, alias="DEMO_MODE")
     data_path: Path = Field(default=Path(".data/displacement-agent.json"), alias="DATA_PATH")
 

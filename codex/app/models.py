@@ -100,6 +100,7 @@ class ApolloContact(BaseModel):
     first_name: str = ""
     last_name: str = ""
     title: str = ""
+    email: str | None = None
     email_status: str | None = None
     linkedin_url: str | None = None
     account_name: str | None = None
@@ -118,6 +119,10 @@ class Opportunity(BaseModel):
     contacts: list[ApolloContact] = Field(default_factory=list)
     fit_score: int = Field(ge=0, le=100)
     displacement_rationale: str
+    impact_summary: str = ""
+    primary_contact_id: str | None = None
+    competitor_usage_confidence: str = "unknown"
+    source_notes: list[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=utcnow)
 
 

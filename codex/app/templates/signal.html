@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="/" class="back">← Dashboard</a>
+
+<section class="panel signal-hero">
+  <div>
+    <p class="eyebrow">{{ signal.competitor_name }} displacement signal</p>
+    <h2>{{ signal.headline }}</h2>
+    <p>{{ signal.pain_hypothesis }}</p>
+    <p class="muted">{{ signal.recommended_angle }}</p>
+    <div class="button-row">
+      <span class="badge {{ signal.severity.value }}">{{ signal.severity.value }}</span>
+      <span class="score">{{ signal.urgency_score }}/100</span>
+      <span class="muted">{{ signal.type.value.replace('_', ' ') }}</span>
+    </div>
+  </div>
+  <div class="stack">
+    <form action="/signals/{{ signal.id }}/prospects" method="post">
+      <button class="primary" type="submit">Find impacted customers</button>
+    </form>
+    {% if signal.evidence %}
+      <div>
+        <h3>Evidence</h3>
+        {% for item in signal.evidence %}
+          <a class="muted" href="{{ item.url }}" target="_blank" rel="noreferrer">{{ item.title }}</a><br>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<form action="/signals/{{ signal.id }}/emails" method="post">
+  <section class="displacement-workspace">
+    <article class="panel workspace-column">
+      <h2>Target accounts</h2>
+      <p class="muted">Select contacts at customers likely exposed to this competitor falter.</p>
+      {% if opportunities %}
+        <div class="cards">
+          {% for opportunity in opportunities %}
+            {% set primary = opportunity.contacts[0] if opportunity.contacts else none %}
+            <div class="card prospect-card">
+              <span class="score">{{ opportunity.fit_score }}</span>
+              <h3>{{ opportunity.account.name }}</h3>
+              <p>{{ opportunity.impact_summary or opportunity.displacement_rationale }}</p>
+              <small>
+                {{ opportunity.account.domain or "No domain" }}
+                · {{ opportunity.competitor_usage_confidence }} usage confidence
+              </small>
+              {% if primary %}
+                <div class="primary-contact">
+                  <strong>{{ primary.full_name }}</strong><br>
+                  <span>{{ primary.title or "Unknown title" }}</span><br>
+                  <small>
+                    {{ primary.email or "No email shown" }}
+                    · {{ primary.email_status or "unknown email" }}
+                  </small>
+                </div>
+              {% endif %}
+              {% if opportunity.contacts %}
+                <div class="contact-list">
+                  {% for contact in opportunity.contacts %}
+                    <label class="contact-choice compact">
+                      <input
+                        type="checkbox"
+                        name="selected_contact_keys"
+                        value="{{ opportunity.id }}::{{ contact.id or contact.full_name }}"
+                      >
+                      <span>
+                        <strong>{{ contact.full_name }}</strong>
+                        <small>{{ contact.title or "Unknown title" }} · {{ contact.email or "No email" }}</small>
+                      </span>
+                    </label>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="muted">No contacts loaded yet. Refresh impacted customers to search Apollo.</p>
+              {% endif %}
+              {% if opportunity.source_notes %}
+                <details>
+                  <summary>Source notes</summary>
+                  <ul>
+                    {% for note in opportunity.source_notes %}
+                      <li>{{ note }}</li>
+                    {% endfor %}
+                  </ul>
+                </details>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="sticky-actions">
+          <button type="submit">Generate selected emails</button>
+        </div>
+      {% else %}
+        <p class="muted">No impacted customers loaded yet. Use “Find impacted customers” to search Apollo/Claude.</p>
+      {% endif %}
+    </article>
+
+    <article class="panel workspace-column">
+      <div class="report-actions">
+        <h2>Outreach drafts</h2>
+        <button type="button" id="copy-all-drafts">Copy all</button>
+      </div>
+      {% set ns = namespace(has_campaigns=false) %}
+      {% for opportunity in opportunities %}
+        {% set campaigns = campaigns_by_opportunity.get(opportunity.id, []) %}
+        {% if campaigns %}
+          {% set ns.has_campaigns = true %}
+          {% for campaign in campaigns %}
+            <div class="card draft-card">
+              <h3>{{ campaign.subject }}</h3>
+              {% if campaign.contact %}
+                <small>To: {{ campaign.contact.full_name }} · {{ campaign.contact.title or "Unknown title" }}</small>
+              {% endif %}
+              <pre class="draft-copy">Subject: {{ campaign.subject }}
+
+{{ campaign.email_body }}</pre>
+              <div class="button-row">
+                <button type="button" class="copy-draft">Copy</button>
+                <a class="button-link" href="/campaigns/{{ campaign.id }}">Review</a>
+              </div>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+      {% if not ns.has_campaigns %}
+        <p class="muted">Generated drafts will appear here after selecting contacts.</p>
+      {% endif %}
+    </article>
+  </section>
+</form>
+
+<script>
+document.querySelectorAll('.copy-draft').forEach((button) => {
+  button.addEventListener('click', () => {
+    const text = button.closest('.draft-card').querySelector('.draft-copy').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const original = button.textContent;
+      button.textContent = 'Copied';
+      setTimeout(() => { button.textContent = original; }, 1500);
+    }).catch(() => {});
+  });
+});
+
+document.getElementById('copy-all-drafts')?.addEventListener('click', () => {
+  const drafts = [...document.querySelectorAll('.draft-copy')].map((node) => node.innerText.trim()).filter(Boolean);
+  if (!drafts.length) return;
+  navigator.clipboard.writeText(drafts.join('\n\n---\n\n')).catch(() => {});
+});
+</script>
+{% endblock %}

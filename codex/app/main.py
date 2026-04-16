@@ -102,6 +102,59 @@ def list_signals(repo: Repository = Depends(get_repository)) -> list[dict]:
     return [signal.model_dump(mode="json") for signal in repo.list_signals()]
 
 
+@app.get("/signals/{signal_id}", response_class=HTMLResponse)
+def signal_workspace(
+    signal_id: str,
+    request: Request,
+    repo: Repository = Depends(get_repository),
+) -> HTMLResponse:
+    signal = repo.get_signal(signal_id)
+    if not signal:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="signal not found")
+    opportunities = repo.list_opportunities(signal_id=signal.id)
+    campaigns_by_opportunity = {
+        opportunity.id: repo.list_campaigns(opportunity_id=opportunity.id) for opportunity in opportunities
+    }
+    return templates.TemplateResponse(
+        request,
+        "signal.html",
+        {
+            "request": request,
+            "signal": signal,
+            "opportunities": opportunities,
+            "campaigns_by_opportunity": campaigns_by_opportunity,
+            "company": repo.get_company_profile(),
+        },
+    )
+
+
+@app.post("/signals/{signal_id}/prospects")
+def find_signal_prospects(
+    signal_id: str,
+    agent: DisplacementAgent = Depends(get_agent),
+) -> RedirectResponse:
+    try:
+        agent.find_impacted_customers(signal_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return RedirectResponse(f"/signals/{signal_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@app.post("/signals/{signal_id}/emails")
+async def generate_signal_emails(
+    signal_id: str,
+    request: Request,
+    agent: DisplacementAgent = Depends(get_agent),
+) -> RedirectResponse:
+    form = await request.form()
+    selected_contact_keys = [str(item) for item in form.getlist("selected_contact_keys")]
+    try:
+        agent.generate_signal_emails(signal_id, selected_contact_keys)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return RedirectResponse(f"/signals/{signal_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
 @app.get("/reports/competitive-landscape", response_class=HTMLResponse)
 def rendered_competitive_landscape_report(
     request: Request, repo: Repository = Depends(get_repository)

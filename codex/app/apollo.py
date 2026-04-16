@@ -101,16 +101,20 @@ class ApolloClient:
         return ApolloQueryPlan(organization_payload=org_payload, people_payload=people_payload)
 
     def search_accounts(self, competitor: Competitor, signal: CompetitorSignal) -> list[ApolloAccount]:
-        if self.demo_mode or not self.api_key:
+        if self.demo_mode:
             return demo_accounts(competitor)
+        if not self.api_key:
+            return []
         payload = self.build_query_plan(competitor, signal).organization_payload
         data = self._post("/mixed_companies/search", payload)
         organizations = data.get("organizations") or data.get("accounts") or []
         return [self._parse_account(item) for item in organizations]
 
     def search_contacts(self, account: ApolloAccount, signal: CompetitorSignal) -> list[ApolloContact]:
-        if self.demo_mode or not self.api_key:
+        if self.demo_mode:
             return demo_contacts(account)
+        if not self.api_key:
+            return []
         payload = {
             **self.build_query_plan(Competitor(id="tmp", name=signal.competitor_name), signal).people_payload,
             "organization_ids": [account.id] if account.id else [],
@@ -161,6 +165,7 @@ class ApolloClient:
             last_name=item.get("last_name")
             or (item.get("name", "").split(" ", 1)[1] if " " in item.get("name", "") else ""),
             title=item.get("title") or "",
+            email=item.get("email"),
             email_status=item.get("email_status"),
             linkedin_url=item.get("linkedin_url"),
             account_name=account.name,

@@ -58,12 +58,12 @@
     {% if signals %}
       <div class="cards">
         {% for signal in signals[:8] %}
-          <div class="card">
+          <a class="card link-card" href="/signals/{{ signal.id }}">
             <span class="badge {{ signal.severity.value }}">{{ signal.severity.value }}</span>
             <h3>{{ signal.headline }}</h3>
             <p>{{ signal.pain_hypothesis }}</p>
             <small>{{ signal.competitor_name }} · {{ signal.type.value.replace('_', ' ') }} · {{ signal.urgency_score }}/100</small>
-          </div>
+          </a>
         {% endfor %}
       </div>
     {% else %}

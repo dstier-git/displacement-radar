@@ -8,6 +8,7 @@ from .claude_discovery import ClaudeCompetitorDiscovery
 from .config import get_settings
 from .gemini import GeminiReasoner
 from .monitor import CompetitorMonitor
+from .prospecting import ClaudeApolloProspector
 from .services import DisplacementAgent
 from .storage import FirestoreStore, JsonStore, Repository
 
@@ -39,5 +40,16 @@ def get_agent() -> DisplacementAgent:
         monitor=CompetitorMonitor(reasoner=reasoner, demo_mode=settings.demo_mode),
         apollo=ApolloClient(api_key=settings.apollo_api_key, demo_mode=settings.demo_mode),
         scorer=OpportunityScorer(),
-        campaign_generator=CampaignGenerator(reasoner=reasoner),
+        prospector=ClaudeApolloProspector(
+            mcp_config=settings.claude_mcp_config,
+            max_budget_usd=settings.claude_max_budget_usd,
+            timeout_seconds=settings.claude_timeout_seconds,
+        ),
+        campaign_generator=CampaignGenerator(
+            reasoner=reasoner,
+            claude_runner=CampaignGenerator._run_claude if settings.claude_draft_emails else None,
+            claude_mcp_config=settings.claude_mcp_config,
+            claude_max_budget_usd=settings.claude_max_budget_usd,
+            claude_timeout_seconds=settings.claude_timeout_seconds,
+        ),
     )

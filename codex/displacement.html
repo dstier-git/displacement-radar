@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>▸ Displacement — Competitor Intel → Live Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#07090f;font-family:'IBM Plex Sans',sans-serif;color:#e2e8f0;height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#1d2433;border-radius:99px}
+input,button{font-family:'IBM Plex Sans',sans-serif}
+input{background:#111827;border:1px solid #1d2433;color:#e2e8f0;border-radius:8px;padding:10px 13px;font-size:13px;width:100%;outline:none;transition:border-color .2s}
+input:focus{border-color:#6366f1}
+input::placeholder{color:#4a5568}
+.prospect-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.p-card{background:#0d1117;border:1px solid #1d2433;border-radius:9px;padding:11px 12px;cursor:pointer;transition:border-color .15s,background .15s;position:relative}
+.p-card:hover{border-color:#2d3748}
+.p-card.selected{background:rgba(99,102,241,.08);border-color:#6366f1}
+.p-card .chk{position:absolute;top:9px;right:9px;width:16px;height:16px;border-radius:4px;border:1px solid #2d3748;background:#111827;display:flex;align-items:center;justify-content:center;font-size:9px;color:transparent;transition:all .15s}
+.p-card.selected .chk{background:#6366f1;border-color:#6366f1;color:#fff}
+.email-card{background:#0d1117;border:1px solid #1d2433;border-radius:10px;padding:13px;margin-bottom:10px}
+@keyframes blink{0%,100%{opacity:.3}50%{opacity:1}}
+@keyframes pulse{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.2)}}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fadein{animation:fadein .3s ease forwards}
+</style>
+</head>
+<body>
+
+<!-- ── SETUP ──────────────────────────────────────────────────── -->
+<div id="screen-setup" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem">
+  <div style="width:100%;max-width:430px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;margin-bottom:6px;letter-spacing:-.5px"><span style="color:#6366f1">▸</span> displacement</div>
+      <div style="font-size:12px;color:#4a5568;font-family:'IBM Plex Mono',monospace">competitor intel → live pipeline</div>
+    </div>
+    <div style="background:#0d1117;border:1px solid #1d2433;border-radius:14px;padding:1.5rem">
+      <div style="margin-bottom:16px">
+        <label style="display:block;font-size:10px;font-weight:600;color:#4a5568;letter-spacing:.09em;margin-bottom:6px;font-family:'IBM Plex Mono',monospace">YOUR PRODUCT</label>
+        <input id="inp-product" placeholder="e.g. Rippling, Notion, Linear"/>
+      </div>
+      <div style="margin-bottom:20px">
+        <label style="display:block;font-size:10px;font-weight:600;color:#4a5568;letter-spacing:.09em;margin-bottom:6px;font-family:'IBM Plex Mono',monospace">YOUR COMPANY</label>
+        <input id="inp-company" placeholder="e.g. Acme Inc"/>
+      </div>
+      <div style="margin-bottom:24px">
+        <label style="display:block;font-size:10px;font-weight:600;color:#4a5568;letter-spacing:.09em;margin-bottom:8px;font-family:'IBM Plex Mono',monospace">COMPETITORS TO MONITOR</label>
+        <div id="comp-list"></div>
+        <button onclick="addCompetitor()" style="font-size:11px;color:#6366f1;background:none;border:none;cursor:pointer;padding:4px 0;font-family:'IBM Plex Mono',monospace;margin-top:4px">+ add competitor</button>
+      </div>
+      <button onclick="startScan()" style="width:100%;padding:11px;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.06em;background:#6366f1;color:#fff;border:none;cursor:pointer">INITIALIZE MONITORING →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCANNING ───────────────────────────────────────────────── -->
+<div id="screen-scanning" style="display:none;min-height:100vh;align-items:center;justify-content:center">
+  <div style="width:100%;max-width:380px;padding:2rem">
+    <div style="text-align:center;margin-bottom:28px">
+      <div id="scan-label" style="font-size:13px;font-family:'IBM Plex Mono',monospace;color:#6366f1;margin-bottom:8px">scanning the web</div>
+      <div id="scan-sub" style="font-size:11px;color:#4a5568;font-family:'IBM Plex Mono',monospace">monitoring competitor activity</div>
+    </div>
+    <div id="scan-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ──────────────────────────────────────────────── -->
+<div id="screen-dashboard" style="display:none;height:100vh;flex-direction:column">
+  <div style="background:#0d1117;border-bottom:1px solid #1d2433;padding:9px 18px;display:flex;align-items:center;gap:14px;flex-shrink:0">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600"><span style="color:#6366f1">▸</span> displacement</div>
+    <div id="hdr-ctx" style="font-size:11px;color:#4a5568;font-family:'IBM Plex Mono',monospace"></div>
+    <div style="flex:1"></div>
+    <div style="text-align:center;padding:0 14px;border-left:1px solid #1d2433">
+      <div id="stat-signals" style="font-size:15px;font-weight:600;color:#a5b4fc;font-family:'IBM Plex Mono',monospace">0</div>
+      <div style="font-size:9px;color:#4a5568;letter-spacing:.09em;font-family:'IBM Plex Mono',monospace">SIGNALS</div>
+    </div>
+    <div style="text-align:center;padding:0 14px;border-left:1px solid #1d2433">
+      <div id="stat-prospects" style="font-size:15px;font-weight:600;color:#22c55e;font-family:'IBM Plex Mono',monospace">0</div>
+      <div style="font-size:9px;color:#4a5568;letter-spacing:.09em;font-family:'IBM Plex Mono',monospace">PROSPECTS</div>
+    </div>
+    <div style="text-align:center;padding:0 14px;border-left:1px solid #1d2433">
+      <div id="stat-campaigns" style="font-size:15px;font-weight:600;color:#f59e0b;font-family:'IBM Plex Mono',monospace">0</div>
+      <div style="font-size:9px;color:#4a5568;letter-spacing:.09em;font-family:'IBM Plex Mono',monospace">CAMPAIGNS</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);border-radius:99px;padding:4px 10px;margin-left:4px">
+      <div style="width:5px;height:5px;border-radius:50%;background:#22c55e;box-shadow:0 0 5px #22c55e;animation:blink 2s ease-in-out infinite"></div>
+      <span style="font-size:10px;color:#22c55e;font-family:'IBM Plex Mono',monospace;font-weight:600">LIVE</span>
+    </div>
+  </div>
+  <div style="flex:1;display:flex;overflow:hidden">
+    <!-- Panel 1: Signals -->
+    <div style="width:215px;border-right:1px solid #1d2433;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden">
+      <div style="padding:9px 13px;border-bottom:1px solid #1d2433;flex-shrink:0">
+        <div style="font-size:9px;font-weight:600;color:#4a5568;letter-spacing:.1em;font-family:'IBM Plex Mono',monospace">INTEL SIGNALS</div>
+      </div>
+      <div id="signal-list" style="flex:1;overflow-y:auto"></div>
+    </div>
+    <!-- Panel 2: Prospects — 2-col grid -->
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid #1d2433;min-width:0">
+      <div style="padding:8px 13px;border-bottom:1px solid #1d2433;flex-shrink:0;display:flex;align-items:center;gap:8px">
+        <div style="font-size:9px;font-weight:600;color:#4a5568;letter-spacing:.1em;font-family:'IBM Plex Mono',monospace">TARGET ACCOUNTS</div>
+        <div style="flex:1"></div>
+        <div id="prospect-toolbar" style="display:none;align-items:center;gap:8px">
+          <span id="sel-count" style="font-size:10px;color:#a5b4fc;font-family:'IBM Plex Mono',monospace"></span>
+          <button onclick="selectAll()" style="font-size:10px;color:#6366f1;background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace">select all</button>
+          <button onclick="clearAll()" style="font-size:10px;color:#4a5568;background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace">clear</button>
+          <button onclick="generateSelected()" style="font-size:10px;font-weight:600;color:#fff;background:#6366f1;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;padding:4px 9px;border-radius:5px">generate selected →</button>
+        </div>
+      </div>
+      <div id="prospect-panel" style="flex:1;overflow-y:auto;padding:13px">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px">
+          <div style="font-size:28px;opacity:.25">◈</div>
+          <div style="font-size:12px;color:#4a5568">Select a signal to load prospects</div>
+        </div>
+      </div>
+    </div>
+    <!-- Panel 3: Campaign comparison -->
+    <div style="width:385px;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden">
+      <div style="padding:8px 14px;border-bottom:1px solid #1d2433;flex-shrink:0;display:flex;align-items:center;gap:8px">
+        <div style="font-size:9px;font-weight:600;color:#4a5568;letter-spacing:.1em;font-family:'IBM Plex Mono',monospace">OUTREACH CAMPAIGNS</div>
+        <div id="campaign-count" style="font-size:10px;color:#4a5568;font-family:'IBM Plex Mono',monospace"></div>
+        <div style="flex:1"></div>
+        <button id="copy-all-btn" onclick="copyAll()" style="display:none;font-size:10px;color:#4a5568;background:none;border:1px solid #1d2433;cursor:pointer;font-family:'IBM Plex Mono',monospace;padding:3px 8px;border-radius:5px">copy all</button>
+      </div>
+      <div id="campaign-panel" style="flex:1;overflow-y:auto;padding:13px">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px">
+          <div style="font-size:28px;opacity:.25">✉</div>
+          <div style="font-size:12px;color:#4a5568;text-align:center;line-height:1.6">Select prospects then click<br/>"generate selected →" to compare</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = "https://api.anthropic.com/v1/messages";
+const MODEL = "claude-sonnet-4-20250514";
+const SEV = {
+  critical:{ bg:"rgba(239,68,68,.12)", border:"rgba(239,68,68,.3)", text:"#f87171" },
+  high:    { bg:"rgba(245,158,11,.12)", border:"rgba(245,158,11,.3)", text:"#fbbf24" },
+  medium:  { bg:"rgba(59,130,246,.12)", border:"rgba(59,130,246,.3)", text:"#60a5fa" }
+};
+const ICONS = { price:"💰",outage:"⚡",leadership:"👤",acquisition:"🔀",review:"⭐",feature:"🔧",security:"🔒",controversy:"🔥" };
+
+let cfg={}, signals=[], selSignal=null, selProspects=new Set();
+let prospects={}, loadingProspects={}, campaigns={}, loadingCampaigns={};
+let compCount=0;
+
+function addCompetitor(){
+  compCount++;
+  const id=compCount, div=document.createElement('div');
+  div.id=`cr-${id}`; div.style.cssText='display:flex;gap:8px;margin-bottom:8px';
+  div.innerHTML=`<input placeholder="Competitor ${id}" id="comp-${id}"/><button onclick="document.getElementById('cr-${id}').remove()" style="background:none;border:1px solid #1d2433;color:#8892a4;border-radius:8px;padding:0 12px;cursor:pointer;font-size:16px">×</button>`;
+  document.getElementById('comp-list').appendChild(div);
+}
+addCompetitor(); addCompetitor();
+
+async function ai(messages, opts={}){
+  const body={model:MODEL,max_tokens:opts.maxTokens||1800,messages};
+  if(opts.web) body.tools=[{type:"web_search_20250305",name:"web_search"}];
+  if(opts.apollo) body.mcp_servers=[{type:"url",url:"https://mcp.apollo.io/mcp",name:"apollo"}];
+  const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+const getText=d=>(d?.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+function safeJSON(t){
+  try{
+    const s=t.replace(/```[\w]*\n?/g,"").replace(/```/g,"").trim();
+    const a=s.indexOf("["),o=s.indexOf("{");
+    const st=(a===-1&&o===-1)?-1:a===-1?o:o===-1?a:Math.min(a,o);
+    if(st===-1)return null;
+    return JSON.parse(s.slice(st,Math.max(s.lastIndexOf("]"),s.lastIndexOf("}"))+1));
+  }catch{return null;}
+}
+
+async function detectSignals(competitor,product,company){
+  const d=await ai([{role:"user",content:`Search the web for recent news (last 60 days) about "${competitor}" creating B2B sales displacement opportunities: price increases, outages, bad G2/Reddit reviews, leadership changes, acquisitions, layoffs, feature removals, security incidents.
+Return ONLY valid JSON array, max 3 signals, no markdown:
+[{"title":"headline under 8 words","type":"price|outage|leadership|acquisition|review|feature|security|controversy","severity":"critical|high|medium","summary":"2 sentences: what happened and why customers are upset","date":"e.g. April 2026","score":8,"persona":"e.g. Mid-market VP of RevOps","angle":"one sentence: why this opens a door for ${product} at ${company}"}]`}],{web:true,maxTokens:2000});
+  const p=safeJSON(getText(d));
+  return Array.isArray(p)?p:[];
+}
+
+async function fetchProspects(signal,competitor){
+  const d=await ai([{role:"user",content:`Use Apollo to find 8 companies that likely use ${competitor} and are vulnerable to: "${signal.title}". Target: ${signal.persona}. Find contacts: VP Sales, VP RevOps, CTO, or CFO.
+Return ONLY valid JSON array, no markdown:
+[{"company":"Acme Corp","domain":"acme.com","industry":"B2B SaaS","size":"200-500 employees","pain":"why they're vulnerable right now","contact":{"name":"Jane Smith","title":"VP of Revenue","email":"j.smith@acme.com"}}]`}],{apollo:true,maxTokens:2000});
+  const fromAPI=safeJSON(getText(d));
+  if(Array.isArray(fromAPI)&&fromAPI.length>=3)return fromAPI;
+  const fb=await ai([{role:"user",content:`Generate 8 realistic mid-market B2B companies using ${competitor}, affected by: "${signal.title}". Return ONLY valid JSON:[{"company":"...","domain":"...","industry":"...","size":"...","pain":"...","contact":{"name":"...","title":"...","email":"..."}}]`}]);
+  const p=safeJSON(getText(fb));
+  return Array.isArray(p)?p:[];
+}
+
+async function generateEmail(signal,prospect){
+  const d=await ai([{role:"user",content:`Write a cold outreach email:
+TRIGGER: ${signal.title}
+CONTEXT: ${signal.summary}
+ANGLE: ${signal.angle}
+TO: ${prospect.contact.name}, ${prospect.contact.title} at ${prospect.company}
+FROM: ${cfg.company}, selling ${cfg.product}
+THEIR PAIN: ${prospect.pain}
+RULES: first sentence references the specific event (no "I hope..."), body=3 sentences (pain→solution→outcome), soft CTA for 20-min call, under 100 words, peer tone, subject under 9 words.
+Return ONLY valid JSON: {"subject":"...","preview":"15-word preview","body":"full email with greeting and sign-off"}`}]);
+  const p=safeJSON(getText(d));
+  return(p?.subject&&p?.body)?p:{subject:`Re: ${signal.title}`,preview:"",body:getText(d)};
+}
+
+async function startScan(){
+  const product=document.getElementById('inp-product').value.trim();
+  const company=document.getElementById('inp-company').value.trim();
+  const comps=[...document.querySelectorAll('[id^="comp-"]')].filter(el=>el.tagName==="INPUT").map(el=>el.value.trim()).filter(Boolean);
+  if(!product||!company||!comps.length){alert('Please fill in all fields.');return;}
+  cfg={product,company,competitors:comps};
+  signals=[];selSignal=null;selProspects=new Set();prospects={};campaigns={};
+  showScreen('scanning');
+  document.getElementById('scan-list').innerHTML='';
+  for(const comp of cfg.competitors){
+    const rid=`sr-${comp.replace(/\W/g,'-')}`;
+    const row=document.createElement('div');
+    row.id=rid; row.style.cssText='background:#0d1117;border:1px solid #1d2433;border-radius:9px;padding:11px 14px;display:flex;align-items:center;gap:12px';
+    row.innerHTML=`<div id="${rid}-dot" style="width:7px;height:7px;border-radius:50%;background:#6366f1;flex-shrink:0;box-shadow:0 0 7px #6366f1;animation:blink 1s ease-in-out infinite"></div><div style="flex:1"><div style="font-size:13px;font-weight:500;color:#e2e8f0;font-family:'IBM Plex Mono',monospace">${comp}</div><div id="${rid}-sub" style="font-size:11px;color:#4a5568;margin-top:1px">scanning...</div></div><div id="${rid}-st"></div>`;
+    document.getElementById('scan-list').appendChild(row);
+    try{
+      const found=await detectSignals(comp,cfg.product,cfg.company);
+      const tagged=found.map(s=>({...s,id:Math.random().toString(36).slice(2,9),competitor:comp}));
+      signals.push(...tagged);
+      document.getElementById(`${rid}-sub`).textContent=`${tagged.length} signal${tagged.length!==1?'s':''} found`;
+      document.getElementById(`${rid}-st`).innerHTML=`<span style="font-size:11px;color:#22c55e;font-family:'IBM Plex Mono',monospace">✓</span>`;
+      const dot=document.getElementById(`${rid}-dot`);
+      dot.style.background='#22c55e'; dot.style.boxShadow='0 0 7px #22c55e'; dot.style.animation='none';
+    }catch{document.getElementById(`${rid}-sub`).textContent='scan failed';}
+  }
+  document.getElementById('scan-label').textContent=`${signals.length} signal${signals.length!==1?'s':''} detected`;
+  document.getElementById('scan-label').style.color='#22c55e';
+  document.getElementById('scan-sub').textContent='loading command center...';
+  setTimeout(()=>{showScreen('dashboard');renderDashboard();if(signals.length>0)selectSignal(signals[0]);},1200);
+}
+
+function showScreen(name){
+  ['setup','scanning','dashboard'].forEach(s=>{
+    const el=document.getElementById(`screen-${s}`);
+    el.style.display=name===s?(s==='dashboard'?'flex':'flex'):'none';
+  });
+}
+
+function renderDashboard(){
+  document.getElementById('hdr-ctx').textContent=`/ ${cfg.company} / ${cfg.product}`;
+  document.getElementById('stat-signals').textContent=signals.length;
+  renderSignalList();
+}
+
+function updateStats(){
+  document.getElementById('stat-prospects').textContent=Object.values(prospects).flat().length;
+  document.getElementById('stat-campaigns').textContent=Object.keys(campaigns).length;
+}
+
+function renderSignalList(){
+  const list=document.getElementById('signal-list');
+  list.innerHTML='';
+  if(!signals.length){list.innerHTML='<div style="padding:20px;font-size:12px;color:#4a5568;text-align:center">No signals found</div>';return;}
+  signals.forEach(s=>{
+    const sv=SEV[s.severity]||SEV.medium, isSel=selSignal?.id===s.id;
+    const div=document.createElement('div');
+    div.style.cssText=`padding:11px 13px;border-bottom:1px solid #1d2433;cursor:pointer;background:${isSel?'rgba(99,102,241,0.07)':'transparent'};border-left:${isSel?'2px solid #6366f1':'2px solid transparent'}`;
+    div.innerHTML=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:5px"><span style="font-size:12px">${ICONS[s.type]||'📌'}</span><span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:99px;background:${sv.bg};color:${sv.text};border:1px solid ${sv.border};font-family:'IBM Plex Mono',monospace">${(s.severity||'medium').toUpperCase()}</span><span style="margin-left:auto;font-size:9px;color:#4a5568;font-family:'IBM Plex Mono',monospace">${s.score}/10</span></div><div style="font-size:12px;font-weight:500;color:#e2e8f0;line-height:1.35;margin-bottom:3px">${s.title}</div><div style="font-size:10px;color:#4a5568;font-family:'IBM Plex Mono',monospace">${s.competitor} · ${s.date}</div>`;
+    div.onclick=()=>{selSignal=s;selProspects=new Set();renderSignalList();renderProspectPanel();renderCampaignPanel();loadProspects(s);};
+    list.appendChild(div);
+  });
+}
+
+function renderProspectPanel(){
+  const panel=document.getElementById('prospect-panel');
+  const toolbar=document.getElementById('prospect-toolbar');
+  if(!selSignal){
+    panel.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px"><div style="font-size:28px;opacity:.25">◈</div><div style="font-size:12px;color:#4a5568">Select a signal to load prospects</div></div>`;
+    toolbar.style.display='none';return;
+  }
+  const sigP=prospects[selSignal.id]||[], isLoading=loadingProspects[selSignal.id];
+  let html=`<div class="fadein" style="background:#0d1117;border:1px solid #1d2433;border-radius:10px;padding:11px 12px;margin-bottom:12px"><div style="font-size:13px;font-weight:500;color:#e2e8f0;margin-bottom:4px">${selSignal.title}</div><div style="font-size:11px;color:#8892a4;line-height:1.5;margin-bottom:7px">${selSignal.summary}</div><div style="background:rgba(99,102,241,.12);border-radius:6px;padding:7px 9px;font-size:11px;color:#a5b4fc;line-height:1.45"><span style="font-family:'IBM Plex Mono',monospace;opacity:.7;font-size:9px">ANGLE // </span>${selSignal.angle}</div></div>`;
+  if(isLoading){
+    html+=`<div style="font-size:9px;color:#6366f1;letter-spacing:.1em;font-family:'IBM Plex Mono',monospace">● SEARCHING APOLLO...</div>`;
+    panel.innerHTML=html; toolbar.style.display='none'; return;
+  }
+  if(!sigP.length){panel.innerHTML=html;toolbar.style.display='none';return;}
+  toolbar.style.display='flex';
+  document.getElementById('sel-count').textContent=selProspects.size>0?`${selProspects.size} selected`:'';
+  html+=`<div style="font-size:9px;font-weight:600;color:#4a5568;letter-spacing:.1em;font-family:'IBM Plex Mono',monospace;margin-bottom:10px">${sigP.length} PROSPECTS — click cards to select, then generate</div><div class="prospect-grid">`;
+  sigP.forEach((p,i)=>{
+    const isSel=selProspects.has(p.company);
+    html+=`<div class="p-card${isSel?' selected':''}" onclick="toggleProspect(${i})"><div class="chk">✓</div><div style="font-weight:500;font-size:13px;color:#e2e8f0;margin-bottom:3px;padding-right:20px">${p.company}</div><div style="font-size:10px;color:#4a5568;font-family:'IBM Plex Mono',monospace;margin-bottom:4px">${p.industry}</div><div style="font-size:11px;color:#8892a4;margin-bottom:4px">${p.contact.name} · ${p.contact.title}</div><div style="font-size:11px;color:#a5b4fc;line-height:1.4">${p.pain}</div></div>`;
+  });
+  html+=`</div>`;
+  panel.innerHTML=html;
+}
+
+function renderCampaignPanel(){
+  const panel=document.getElementById('campaign-panel');
+  const countEl=document.getElementById('campaign-count');
+  const copyAllBtn=document.getElementById('copy-all-btn');
+  if(!selSignal||selProspects.size===0){
+    panel.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px"><div style="font-size:28px;opacity:.25">✉</div><div style="font-size:12px;color:#4a5568;text-align:center;line-height:1.6">Select prospects then click<br/>"generate selected →" to compare</div></div>`;
+    countEl.textContent=''; copyAllBtn.style.display='none'; return;
+  }
+  const sigP=prospects[selSignal.id]||[];
+  const selected=sigP.filter(p=>selProspects.has(p.company));
+  const ready=selected.filter(p=>campaigns[`${selSignal.id}::${p.company}`]);
+  countEl.textContent=`${ready.length}/${selected.length} ready`;
+  copyAllBtn.style.display=ready.length>1?'block':'none';
+  let html='';
+  selected.forEach(p=>{
+    const ck=`${selSignal.id}::${p.company}`, email=campaigns[ck], genning=loadingCampaigns[ck];
+    const statusColor=genning?'#f59e0b':email?'#22c55e':'#2d3748';
+    html+=`<div class="email-card fadein"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #1d2433"><div><div style="font-size:13px;font-weight:500;color:#e2e8f0">${p.company}</div><div style="font-size:10px;color:#4a5568;margin-top:1px">${p.contact.name} · ${p.contact.title}</div></div><div style="display:flex;gap:6px;align-items:center">${email?`<button onclick="copySingle(event,'${ck.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')" style="font-size:10px;color:#4a5568;background:none;border:1px solid #1d2433;cursor:pointer;font-family:'IBM Plex Mono',monospace;padding:3px 8px;border-radius:5px">copy</button>`:''}
+    <div style="width:6px;height:6px;border-radius:50%;background:${statusColor};box-shadow:0 0 5px ${genning?'#f59e0b':email?'#22c55e':'transparent'}"></div></div></div>`;
+    if(genning){
+      html+=`<div style="font-size:11px;color:#4a5568">generating...</div>`;
+    } else if(email){
+      html+=`<div style="margin-bottom:8px"><div style="font-size:9px;color:#4a5568;font-family:'IBM Plex Mono',monospace;margin-bottom:3px">SUBJECT</div><div style="font-size:12px;font-weight:500;color:#e2e8f0;background:#111827;border-radius:6px;padding:7px 10px;border:1px solid #1d2433">${email.subject}</div></div><div><div style="font-size:9px;color:#4a5568;font-family:'IBM Plex Mono',monospace;margin-bottom:3px">BODY</div><div style="font-size:11px;color:#c4ccd8;line-height:1.75;white-space:pre-wrap;background:#111827;border-radius:6px;padding:9px 10px;border:1px solid #1d2433">${email.body}</div></div>`;
+    } else {
+      html+=`<div style="font-size:11px;color:#4a5568">not yet generated</div>`;
+    }
+    html+=`</div>`;
+  });
+  panel.innerHTML=html||'<div style="font-size:12px;color:#4a5568">No selected prospects.</div>';
+}
+
+async function loadProspects(signal){
+  if(prospects[signal.id]!==undefined||loadingProspects[signal.id])return;
+  loadingProspects[signal.id]=true; renderProspectPanel();
+  try{prospects[signal.id]=await fetchProspects(signal,signal.competitor);}
+  catch{prospects[signal.id]=[];}
+  loadingProspects[signal.id]=false; renderProspectPanel(); updateStats();
+}
+
+function selectSignal(s){selSignal=s;selProspects=new Set();renderSignalList();renderProspectPanel();renderCampaignPanel();loadProspects(s);}
+
+function toggleProspect(idx){
+  const p=(prospects[selSignal?.id]||[])[idx];
+  if(!p)return;
+  selProspects.has(p.company)?selProspects.delete(p.company):selProspects.add(p.company);
+  renderProspectPanel(); renderCampaignPanel();
+}
+
+function selectAll(){(prospects[selSignal?.id]||[]).forEach(p=>selProspects.add(p.company));renderProspectPanel();renderCampaignPanel();}
+function clearAll(){selProspects=new Set();renderProspectPanel();renderCampaignPanel();}
+
+async function generateSelected(){
+  if(!selSignal||!selProspects.size)return;
+  const sigP=prospects[selSignal.id]||[];
+  const toGen=sigP.filter(p=>selProspects.has(p.company)&&!campaigns[`${selSignal.id}::${p.company}`]&&!loadingCampaigns[`${selSignal.id}::${p.company}`]);
+  renderCampaignPanel();
+  await Promise.all(toGen.map(async p=>{
+    const ck=`${selSignal.id}::${p.company}`;
+    loadingCampaigns[ck]=true; renderCampaignPanel();
+    try{campaigns[ck]=await generateEmail(selSignal,p);}
+    catch{campaigns[ck]={subject:`Re: ${selSignal.title}`,preview:"",body:"Could not generate. Please retry."};}
+    loadingCampaigns[ck]=false; renderCampaignPanel(); updateStats();
+  }));
+}
+
+function copySingle(evt, ck){
+  evt.stopPropagation();
+  const email=campaigns[ck];
+  if(!email)return;
+  navigator.clipboard.writeText(`Subject: ${email.subject}\n\n${email.body}`).catch(()=>{});
+  const btn=evt.target; btn.textContent='✓'; btn.style.color='#22c55e';
+  setTimeout(()=>{btn.textContent='copy';btn.style.color='#4a5568';},2000);
+}
+
+function copyAll(){
+  const sigP=prospects[selSignal?.id]||[];
+  const lines=sigP.filter(p=>selProspects.has(p.company)).map(p=>{
+    const e=campaigns[`${selSignal.id}::${p.company}`];
+    return e?`--- ${p.company} (${p.contact.name}) ---\nSubject: ${e.subject}\n\n${e.body}`:null;
+  }).filter(Boolean);
+  if(!lines.length)return;
+  navigator.clipboard.writeText(lines.join('\n\n')).catch(()=>{});
+  const btn=document.getElementById('copy-all-btn');
+  btn.textContent='✓ copied'; setTimeout(()=>{btn.textContent='copy all';},2000);
+}
+</script>
+</body>
+</html>
