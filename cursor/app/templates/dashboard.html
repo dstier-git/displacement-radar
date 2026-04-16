@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel action-panel">
+  <div>
+    <p class="eyebrow">Company-first setup</p>
+    {% if company %}
+      <h2>{{ company.company_name }}</h2>
+      <p class="muted">{{ company.positioning or company.category or "Competitors discovered from your company name." }}</p>
+    {% else %}
+      <h2>Add your company name</h2>
+      <p class="muted">Claude MCP discovers competitors automatically; no manual competitor watchlist required.</p>
+    {% endif %}
+  </div>
+  <form class="inline-form" action="/company/discover" method="post">
+    <input name="company_name" placeholder="Your company name" value="{{ company.company_name if company else '' }}" required>
+    <button type="submit">Discover competitors</button>
+  </form>
+</section>
+
+<section class="grid metrics">
+  <article><strong>{{ competitors|length }}</strong><span>Competitors</span></article>
+  <article><strong>{{ signals|length }}</strong><span>Signals</span></article>
+  <article><strong>{{ opportunities|length }}</strong><span>Opportunities</span></article>
+  <article><strong>{{ campaigns|length }}</strong><span>Email drafts</span></article>
+</section>
+
+<section class="panel action-panel">
+  <div>
+    <h2>Scan and report</h2>
+    <p class="muted">Run codex's scanner across the Claude-discovered competitors, then export the landscape report.</p>
+  </div>
+  <div class="button-row">
+    <form action="/scan" method="post"><button class="primary" type="submit">Run scan</button></form>
+    <a class="button-link" href="/reports/competitive-landscape" target="_blank" rel="noreferrer">Open rendered report</a>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Claude-discovered competitors</h2>
+  {% if competitors %}
+    <div class="cards three">
+      {% for competitor in competitors %}
+        <div class="card">
+          <h3>{{ competitor.name }}</h3>
+          <p>{{ competitor.product_positioning or competitor.category or "Ready for signal scanning." }}</p>
+          <small>{{ competitor.category or "Uncategorized" }}</small>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">Enter your company name to discover competitors with Claude MCP.</p>
+  {% endif %}
+</section>
+
+<section class="grid two">
+  <article class="panel">
+    <h2>Competitor signals</h2>
+    {% if signals %}
+      <div class="cards">
+        {% for signal in signals[:8] %}
+          <div class="card">
+            <span class="badge {{ signal.severity.value }}">{{ signal.severity.value }}</span>
+            <h3>{{ signal.headline }}</h3>
+            <p>{{ signal.pain_hypothesis }}</p>
+            <small>{{ signal.competitor_name }} · {{ signal.type.value.replace('_', ' ') }} · {{ signal.urgency_score }}/100</small>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No signals yet. Discover competitors, then run a scan.</p>
+    {% endif %}
+  </article>
+
+  <article class="panel">
+    <h2>Ranked opportunities</h2>
+    {% if opportunities %}
+      <div class="cards">
+        {% for opportunity in opportunities[:10] %}
+          <a class="card link-card" href="/opportunities/{{ opportunity.id }}">
+            <span class="score">{{ opportunity.fit_score }}</span>
+            <h3>{{ opportunity.account.name }}</h3>
+            <p>{{ opportunity.displacement_rationale }}</p>
+            <small>{{ opportunity.contacts|length }} decision makers · {{ opportunity.account.domain or "No domain" }}</small>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">Opportunities appear after a scan.</p>
+    {% endif %}
+  </article>
+</section>
+
+<section class="panel">
+  <h2>Email drafts</h2>
+  {% if campaigns %}
+    <div class="cards three">
+      {% for campaign in campaigns[:9] %}
+        <a class="card link-card" href="/campaigns/{{ campaign.id }}">
+          <h3>{{ campaign.subject }}</h3>
+          {% if campaign.contact %}<small>{{ campaign.contact.full_name }} · {{ campaign.contact.title }}</small>{% endif %}
+          <p>{{ campaign.email_body[:180] }}...</p>
+          <small>{{ campaign.evidence_urls|length }} evidence links</small>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">Select decision makers on an opportunity to generate Aahan-style cold emails.</p>
+  {% endif %}
+</section>
+{% endblock %}
