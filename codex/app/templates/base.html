@@ -13,12 +13,75 @@
       <h1>Competitor Displacement Agent</h1>
       <p>Turns competitor bad days into draft-only, evidence-backed pipeline plays.</p>
     </div>
-    <form action="/scan" method="post">
+    <form action="/scan" method="post" data-loading-message="Scanning competitors for displacement signals">
       <button class="primary" type="submit">Run scan</button>
     </form>
   </header>
   <main>
     {% block content %}{% endblock %}
   </main>
+  <div id="loading-overlay" class="loading-overlay" role="status" aria-live="polite" aria-hidden="true">
+    <div class="loading-card">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p class="eyebrow">Working</p>
+      <h2 id="loading-title">Processing request</h2>
+      <p id="loading-detail" class="muted">This can take a moment while AI and Apollo lookups finish.</p>
+      <div class="loading-steps" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+  <script>
+    const loadingMessages = [
+      {
+        match: '/company/discover',
+        title: 'Discovering competitors',
+        detail: 'Claude is identifying the relevant market and competitor set.'
+      },
+      {
+        match: '/scan',
+        title: 'Scanning competitors',
+        detail: 'Looking for fresh displacement signals and creating target opportunities.'
+      },
+      {
+        match: '/prospects',
+        title: 'Finding impacted customers',
+        detail: 'Apollo and Claude are looking for likely exposed accounts and decision makers.'
+      },
+      {
+        match: '/emails',
+        title: 'Generating outreach drafts',
+        detail: 'Drafting personalized emails from the signal, account impact, and contact context.'
+      },
+      {
+        match: '/apollo-claude-prompt',
+        title: 'Preparing Apollo handoff',
+        detail: 'Building the draft-only Claude/Apollo verification prompt.'
+      }
+    ];
+
+    function showLoading(form) {
+      const overlay = document.getElementById('loading-overlay');
+      if (!overlay) return;
+      const action = form.getAttribute('action') || '';
+      const override = form.dataset.loadingMessage;
+      const message = loadingMessages.find((item) => action.includes(item.match));
+      const title = override || message?.title || 'Processing request';
+      const detail = form.dataset.loadingDetail || message?.detail || 'This can take a moment.';
+      document.getElementById('loading-title').textContent = title;
+      document.getElementById('loading-detail').textContent = detail;
+      overlay.classList.add('visible');
+      overlay.setAttribute('aria-hidden', 'false');
+      [...form.querySelectorAll('button[type="submit"]')].forEach((button) => {
+        button.disabled = true;
+        button.dataset.originalText = button.textContent;
+        button.textContent = 'Working…';
+      });
+    }
+
+    document.querySelectorAll('form[method="post"]').forEach((form) => {
+      form.addEventListener('submit', () => showLoading(form));
+    });
+  </script>
 </body>
 </html>

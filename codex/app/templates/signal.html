@@ -15,7 +15,11 @@
     </div>
   </div>
   <div class="stack">
-    <form action="/signals/{{ signal.id }}/prospects" method="post">
+    <form
+      action="/signals/{{ signal.id }}/prospects"
+      method="post"
+      data-loading-message="Finding impacted customers"
+    >
       <button class="primary" type="submit">Find impacted customers</button>
     </form>
     {% if signal.evidence %}
@@ -29,7 +33,11 @@
   </div>
 </section>
 
-<form action="/signals/{{ signal.id }}/emails" method="post">
+<form
+  action="/signals/{{ signal.id }}/emails"
+  method="post"
+  data-loading-message="Generating selected outreach drafts"
+>
   <section class="displacement-workspace">
     <article class="panel workspace-column">
       <h2>Target accounts</h2>

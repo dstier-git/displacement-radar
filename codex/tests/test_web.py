@@ -63,6 +63,8 @@ def test_dashboard_company_scan_email_and_report_routes(tmp_path: Path) -> None:
         assert dashboard.status_code == 200
         assert "Company-first setup" in dashboard.text
         assert "Email drafts" in dashboard.text
+        assert "loading-overlay" in dashboard.text
+        assert "Scanning competitors" in dashboard.text
         assert "/signals/" in dashboard.text
         assert "/reports/competitive-landscape" in dashboard.text
 
@@ -71,6 +73,8 @@ def test_dashboard_company_scan_email_and_report_routes(tmp_path: Path) -> None:
         signal_page = client.get(f"/signals/{signal.id}")
         assert signal_page.status_code == 200
         assert "Find impacted customers" in signal_page.text
+        assert "Finding impacted customers" in signal_page.text
+        assert "Generating selected outreach drafts" in signal_page.text
         assert opportunity.account.name in signal_page.text
 
         signal_prospects = client.post(f"/signals/{signal.id}/prospects", follow_redirects=False)

@@ -22,12 +22,21 @@
   <article class="panel">
     <h2>Decision makers</h2>
     <p class="muted">Aahan-style buyer-persona search: titles are selected from the signal type, then Apollo finds contacts.</p>
-    <form action="/opportunities/{{ opportunity.id }}/prospects" method="post">
+    <form
+      action="/opportunities/{{ opportunity.id }}/prospects"
+      method="post"
+      data-loading-message="Finding decision makers"
+    >
       <button type="submit">Find / refresh decision makers</button>
     </form>
 
     {% if opportunity.contacts %}
-      <form class="stack" action="/opportunities/{{ opportunity.id }}/emails" method="post">
+      <form
+        class="stack"
+        action="/opportunities/{{ opportunity.id }}/emails"
+        method="post"
+        data-loading-message="Generating selected outreach drafts"
+      >
         {% for contact in opportunity.contacts %}
           <label class="contact-choice">
             <input type="checkbox" name="contact_ids" value="{{ contact.id or contact.full_name }}">

@@ -23,7 +23,11 @@
     <h3>Apollo Claude MCP handoff</h3>
     <p class="muted">Paste this into Claude with Apollo enabled for a draft-only verification pass.</p>
     <pre>{{ campaign.apollo_claude_prompt }}</pre>
-    <form action="/campaigns/{{ campaign.id }}/apollo-claude-prompt" method="post">
+    <form
+      action="/campaigns/{{ campaign.id }}/apollo-claude-prompt"
+      method="post"
+      data-loading-message="Preparing Apollo handoff"
+    >
       <button type="submit">View raw prompt</button>
     </form>
   </article>

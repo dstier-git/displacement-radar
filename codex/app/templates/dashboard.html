@@ -11,7 +11,12 @@
       <p class="muted">Claude MCP discovers competitors automatically; no manual competitor watchlist required.</p>
     {% endif %}
   </div>
-  <form class="inline-form" action="/company/discover" method="post">
+  <form
+    class="inline-form"
+    action="/company/discover"
+    method="post"
+    data-loading-message="Discovering competitors"
+  >
     <input name="company_name" placeholder="Your company name" value="{{ company.company_name if company else '' }}" required>
     <button type="submit">Discover competitors</button>
   </form>
@@ -30,7 +35,9 @@
     <p class="muted">Run codex's scanner across the Claude-discovered competitors, then export the landscape report.</p>
   </div>
   <div class="button-row">
-    <form action="/scan" method="post"><button class="primary" type="submit">Run scan</button></form>
+    <form action="/scan" method="post" data-loading-message="Scanning competitors">
+      <button class="primary" type="submit">Run scan</button>
+    </form>
     <a class="button-link" href="/reports/competitive-landscape" target="_blank" rel="noreferrer">Open rendered report</a>
   </div>
 </section>
