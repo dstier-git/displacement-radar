@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.claude_signals import ClaudeSignalDiscovery
 from app.config import get_settings
@@ -29,4 +33,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        print(f"Claude signal discovery failed: {exc}", file=sys.stderr)
+        raise SystemExit(1)

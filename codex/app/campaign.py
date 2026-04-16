@@ -156,7 +156,8 @@ class CampaignGenerator:
         )
 
     def _claude_command(self) -> list[str]:
-        command = ["claude", "-p", "--output-format", "text", "--permission-mode", "dontAsk"]
+        # `-p` is appended by the runner so it always directly precedes the prompt.
+        command = ["claude", "--output-format", "text", "--permission-mode", "dontAsk"]
         if self.claude_max_budget_usd is not None:
             command.extend(["--max-budget-usd", str(self.claude_max_budget_usd)])
         if self.claude_mcp_config:
@@ -165,13 +166,9 @@ class CampaignGenerator:
 
     @staticmethod
     def _run_claude(command: list[str], prompt: str, timeout_seconds: int) -> str:
-        completed = subprocess.run(
-            [*command, prompt],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-        )
+        completed = subprocess.run([*command, "-p", prompt], capture_output=True, text=True, timeout=timeout_seconds)
+        if completed.returncode != 0:
+            return (completed.stdout or "") + ("\n" + completed.stderr if completed.stderr else "")
         return completed.stdout
 
     @staticmethod

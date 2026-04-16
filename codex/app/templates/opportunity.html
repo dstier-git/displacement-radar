@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <a href="/" class="back">← Dashboard</a>
+
+{% if page_error %}
+  <p class="notice warning">{{ page_error }}</p>
+{% endif %}
+{% if page_notice %}
+  <p class="notice">{{ page_notice }}</p>
+{% endif %}
+
 <section class="panel">
   <span class="score">{{ opportunity.fit_score }}</span>
   <h2>{{ opportunity.account.name }}</h2>
@@ -22,6 +30,11 @@
   <article class="panel">
     <h2>Decision makers</h2>
     <p class="muted">Aahan-style buyer-persona search: titles are selected from the signal type, then Apollo finds contacts.</p>
+    {% if not apollo_configured %}
+      <p class="notice warning">Apollo is not configured. Set <code>APOLLO_API_KEY</code> and restart the server to fetch emails.</p>
+    {% elif not opportunity.account.domain %}
+      <p class="notice warning">This opportunity has no company domain, so Apollo contact search may return 0 people.</p>
+    {% endif %}
     <form
       action="/opportunities/{{ opportunity.id }}/prospects"
       method="post"
@@ -43,10 +56,18 @@
             <span>
               <strong>{{ contact.full_name }}</strong><br>
               <span>{{ contact.title or "Unknown title" }}</span><br>
-              <small>{{ contact.email_status or "unknown email" }} · {{ contact.linkedin_url or "No LinkedIn" }}</small>
+              <small>
+                {{ contact.email or "No email" }}
+                · {{ contact.email_status or "unknown email" }}
+                · {{ contact.linkedin_url or "No LinkedIn" }}
+              </small>
             </span>
           </label>
         {% endfor %}
+        {% set any_email = opportunity.contacts | selectattr("email") | list | length %}
+        {% if any_email == 0 %}
+          <p class="muted">Apollo returned contacts, but none include an email address. Try again later or use LinkedIn.</p>
+        {% endif %}
         <button type="submit">Generate selected emails</button>
         <ul class="email-rule-list">
           <li>Under 100 words</li>
@@ -55,7 +76,11 @@
         </ul>
       </form>
     {% else %}
-      <p class="muted">No decision makers loaded yet.</p>
+      {% if not apollo_configured %}
+        <p class="muted">No decision makers: <code>APOLLO_API_KEY</code> is not set.</p>
+      {% else %}
+        <p class="muted">No decision makers loaded yet (Apollo returned 0).</p>
+      {% endif %}
     {% endif %}
   </article>
 

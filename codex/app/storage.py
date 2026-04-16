@@ -20,23 +20,30 @@ class Store(Protocol):
     def put(self, collection: str, document: BaseModel) -> None: ...
     def get_all(self, collection: str, model: type[T]) -> list[T]: ...
     def get(self, collection: str, document_id: str, model: type[T]) -> T | None: ...
+    def delete(self, collection: str, document_id: str) -> None: ...
 
 
 class JsonStore:
     """Tiny JSON document store used locally and in hackathon demos."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, seed_path: Path | None = None):
         self.path = path
+        self.seed_path = seed_path
         self._lock = RLock()
         self._data = self._load()
 
     def _load(self) -> dict[str, dict[str, dict]]:
-        if not self.path.exists():
+        source = self.path if self.path.exists() else self.seed_path
+        if not source or not source.exists():
             return self._empty()
-        with self.path.open("r", encoding="utf-8") as handle:
+        with source.open("r", encoding="utf-8") as handle:
             loaded = json.load(handle)
         empty = self._empty()
         empty.update({key: value for key, value in loaded.items() if isinstance(value, dict)})
+        if source != self.path:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with self.path.open("w", encoding="utf-8") as handle:
+                json.dump(empty, handle, indent=2, sort_keys=True)
         return empty
 
     @staticmethod
@@ -68,6 +75,11 @@ class JsonStore:
         with self._lock:
             item = self._data.get(collection, {}).get(document_id)
         return model.model_validate(item) if item else None
+
+    def delete(self, collection: str, document_id: str) -> None:
+        with self._lock:
+            self._data.get(collection, {}).pop(document_id, None)
+            self._save()
 
     def clear(self) -> None:
         with self._lock:
@@ -103,6 +115,9 @@ class FirestoreStore:
     def get(self, collection: str, document_id: str, model: type[T]) -> T | None:
         snapshot = self.client.collection(collection).document(document_id).get()
         return model.model_validate(snapshot.to_dict()) if snapshot.exists else None
+
+    def delete(self, collection: str, document_id: str) -> None:
+        self.client.collection(collection).document(document_id).delete()
 
 
 class Repository:
@@ -150,6 +165,9 @@ class Repository:
 
     def get_opportunity(self, opportunity_id: str) -> Opportunity | None:
         return self.store.get("opportunities", opportunity_id, Opportunity)
+
+    def delete_opportunity(self, opportunity_id: str) -> None:
+        self.store.delete("opportunities", opportunity_id)
 
     def save_campaign(self, campaign: CampaignDraft) -> None:
         self.store.put("campaign_drafts", campaign)

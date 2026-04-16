@@ -6,7 +6,11 @@
   <title>{{ title or "Competitor Displacement Agent" }}</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
-<body>
+<body
+  data-demo-loading-ms="{{ demo_loading_seconds or 0 }}"
+  data-demo-loading-title="{{ demo_loading_title or '' }}"
+  data-demo-loading-detail="{{ demo_loading_detail or '' }}"
+>
   <header class="hero">
     <div>
       <p class="eyebrow">Apollo × Google Cloud Hackathon</p>
@@ -32,6 +36,8 @@
     </div>
   </div>
   <script>
+    const demoLoadingMs = Number(document.body.dataset.demoLoadingMs || 0);
+    const demoLoadingKey = 'demo-loading-complete-v1';
     const loadingMessages = [
       {
         match: '/company/discover',
@@ -60,6 +66,30 @@
       }
     ];
 
+    function startDemoLoading() {
+      const overlay = document.getElementById('loading-overlay');
+      if (!overlay) return;
+      document.body.classList.add('demo-loading');
+      overlay.setAttribute('aria-hidden', 'false');
+      document.getElementById('loading-title').textContent = document.body.dataset.demoLoadingTitle || 'Loading demo data';
+      document.getElementById('loading-detail').textContent = document.body.dataset.demoLoadingDetail || 'Replaying the saved competitor and signal snapshot.';
+      const start = Date.now();
+      const timer = setInterval(() => {
+        const elapsed = Date.now() - start;
+        const remaining = Math.max(0, Math.ceil((demoLoadingMs - elapsed) / 1000));
+        document.getElementById('loading-detail').textContent = remaining
+          ? `Replaying the saved competitor and signal snapshot. ${remaining}s remaining.`
+          : document.body.dataset.demoLoadingDetail || 'Replaying the saved competitor and signal snapshot.';
+      }, 1000);
+      setTimeout(() => {
+        clearInterval(timer);
+        sessionStorage.setItem(demoLoadingKey, '1');
+        overlay.classList.remove('visible');
+        document.body.classList.remove('demo-loading');
+        overlay.setAttribute('aria-hidden', 'true');
+      }, demoLoadingMs || 12000);
+    }
+
     function showLoading(form) {
       const overlay = document.getElementById('loading-overlay');
       if (!overlay) return;
@@ -78,6 +108,12 @@
         button.textContent = 'Working…';
       });
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (demoLoadingMs > 0 && !sessionStorage.getItem(demoLoadingKey)) {
+        startDemoLoading();
+      }
+    });
 
     document.querySelectorAll('form[method="post"]').forEach((form) => {
       form.addEventListener('submit', () => showLoading(form));

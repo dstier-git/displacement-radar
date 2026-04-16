@@ -72,12 +72,46 @@ th { color: #7dd3fc; }
 .pie-legend-row { display: grid; grid-template-columns: auto 1fr auto; gap: .45rem; align-items: center; }
 .empty-graph { color: #94a3b8; }
 
+.relationship-panel { overflow: hidden; }
+.relationship-header { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
+.graph-stats { display: flex; gap: .65rem; flex-wrap: wrap; justify-content: flex-end; }
+.graph-stats span { display: inline-flex; gap: .35rem; align-items: center; padding: .45rem .65rem; border-radius: .5rem; background: rgba(2,6,23,.42); border: 1px solid rgba(255,255,255,.1); color: #cbd5e1; }
+.graph-stats strong { color: #edf2ff; }
+.graph-toolbar { display: flex; gap: .5rem; flex-wrap: wrap; margin: .85rem 0 1rem; }
+.graph-filter { border-radius: .5rem; padding: .55rem .75rem; color: #e2e8f0; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); }
+.graph-filter.active { color: #07111f; background: #86efac; border-color: #86efac; }
+.relationship-map { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem); gap: 1rem; align-items: stretch; }
+.graph-scroll { min-height: 24rem; max-height: 34rem; overflow: auto; border-radius: .5rem; background: rgba(2,6,23,.48); border: 1px solid rgba(255,255,255,.09); cursor: grab; touch-action: none; user-select: none; }
+.graph-scroll.dragging { cursor: grabbing; }
+#relationship-graph { display: block; max-width: none; background: transparent; }
+.graph-link { stroke: rgba(226,232,240,.38); stroke-width: 2; }
+.graph-link.customer { stroke: rgba(125,211,252,.48); }
+.graph-link.person { stroke: rgba(134,239,172,.42); }
+.graph-link.filtered, .graph-link.dimmed { opacity: .18; }
+.graph-node { cursor: pointer; outline: none; transition: opacity .15s ease; }
+.graph-node rect { stroke-width: 1.5; filter: drop-shadow(0 .45rem 1rem rgba(0,0,0,.22)); }
+.graph-node.competitor rect { fill: #12304d; stroke: #7dd3fc; }
+.graph-node.customer rect { fill: #163b2a; stroke: #86efac; }
+.graph-node.person rect { fill: #432036; stroke: #f0abfc; }
+.graph-node.selected rect { stroke: #facc15; stroke-width: 3; }
+.graph-node.filtered, .graph-node.dimmed { opacity: .32; }
+.graph-node:focus rect { stroke: #facc15; stroke-width: 3; }
+.node-label { fill: #f8fafc; font-size: 14px; font-weight: 800; pointer-events: none; }
+.node-subtitle { fill: #cbd5e1; font-size: 11px; pointer-events: none; }
+.graph-empty { fill: #94a3b8; font-size: 18px; }
+.relationship-detail { min-height: 24rem; padding: 1rem; border-radius: .5rem; background: rgba(2,6,23,.42); border: 1px solid rgba(255,255,255,.1); }
+.relationship-detail p { line-height: 1.45; }
+.relationship-detail .button-link { margin-top: .5rem; border-radius: .5rem; }
+
 .inline-form { display: flex; gap: .7rem; align-items: end; min-width: min(100%, 30rem); }
 .inline-form input { margin-top: 0; }
 .button-row { display: flex; gap: .7rem; align-items: center; flex-wrap: wrap; }
 .contact-choice { display: grid; grid-template-columns: auto 1fr; gap: .75rem; align-items: start; padding: .85rem 0; border-bottom: 1px solid rgba(255,255,255,.08); }
 .contact-choice input { width: auto; margin-top: .25rem; }
 .email-rule-list { margin: .5rem 0 0; color: #94a3b8; }
+.notice { margin: .85rem 0 0; padding: .8rem 1rem; border-radius: .9rem; border: 1px solid rgba(255,255,255,.12); }
+.notice.warning { color: #fde68a; background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.28); }
+.notice code { color: #e0f2fe; }
 
 .signal-hero { display: flex; justify-content: space-between; gap: 1rem; }
 .displacement-workspace { display: grid; grid-template-columns: minmax(22rem, 1.1fr) minmax(22rem, .9fr); gap: 1rem; align-items: start; }
@@ -100,10 +134,16 @@ th { color: #7dd3fc; }
 .loading-steps span:nth-child(2) { animation-delay: .15s; }
 .loading-steps span:nth-child(3) { animation-delay: .3s; }
 button:disabled { opacity: .65; cursor: wait; }
+body.demo-loading main,
+body.demo-loading .hero { visibility: hidden; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes loading-pulse { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-.25rem); } }
 
 @media (max-width: 820px) {
+  .relationship-header { display: grid; }
+  .graph-stats { justify-content: flex-start; }
+  .relationship-map { grid-template-columns: 1fr; }
+  .graph-scroll { max-height: 28rem; }
   .signal-hero { display: grid; }
   .displacement-workspace { grid-template-columns: 1fr; }
 }
