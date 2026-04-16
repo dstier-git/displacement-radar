@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
@@ -11,6 +12,7 @@ from fastapi.templating import Jinja2Templates
 from .config import get_settings
 from .dependencies import get_agent, get_competitor_discovery, get_repository
 from .claude_discovery import ClaudeCompetitorDiscovery
+from .graph import build_relationship_graph
 from .markdown_render import render_markdown_report
 from .reports import CompetitiveLandscapeReportGenerator
 from .services import DisplacementAgent
@@ -40,7 +42,9 @@ def dashboard(
     request: Request,
     repo: Repository = Depends(get_repository),
 ) -> HTMLResponse:
+    settings = get_settings()
     campaigns = repo.list_campaigns()
+    relationship_graph = build_relationship_graph(repo)
     return templates.TemplateResponse(
         request,
         "dashboard.html",
@@ -52,8 +56,20 @@ def dashboard(
             "opportunities": repo.list_opportunities(),
             "campaigns": campaigns,
             "scan_runs": repo.list_scan_runs(),
+            "relationship_graph": relationship_graph,
+            "demo_mode": settings.demo_mode,
+            "apollo_configured": bool(settings.apollo_api_key),
+            "openai_configured": bool(settings.openai_api_key),
+            "demo_loading_seconds": 12,
+            "demo_loading_title": "Loading saved demo data",
+            "demo_loading_detail": "Replaying the permanent competitor and signal snapshot before you start exploring.",
         },
     )
+
+
+@app.get("/graph/displacement.json")
+def displacement_graph(repo: Repository = Depends(get_repository)) -> dict[str, object]:
+    return build_relationship_graph(repo)
 
 
 @app.post("/company/discover")
@@ -108,6 +124,7 @@ def signal_workspace(
     request: Request,
     repo: Repository = Depends(get_repository),
 ) -> HTMLResponse:
+    settings = get_settings()
     signal = repo.get_signal(signal_id)
     if not signal:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="signal not found")
@@ -124,6 +141,11 @@ def signal_workspace(
             "opportunities": opportunities,
             "campaigns_by_opportunity": campaigns_by_opportunity,
             "company": repo.get_company_profile(),
+            "demo_mode": settings.demo_mode,
+            "apollo_configured": bool(settings.apollo_api_key),
+            "openai_configured": bool(settings.openai_api_key),
+            "page_error": request.query_params.get("error"),
+            "page_notice": request.query_params.get("notice"),
         },
     )
 
@@ -133,6 +155,21 @@ def find_signal_prospects(
     signal_id: str,
     agent: DisplacementAgent = Depends(get_agent),
 ) -> RedirectResponse:
+    settings = get_settings()
+    if settings.prefer_claude_mcp_prospecting:
+        if not settings.claude_mcp_config:
+            msg = "Claude MCP is enabled, but CLAUDE_MCP_CONFIG is not set. Export CLAUDE_MCP_CONFIG to codex/claude.mcp.json and restart."
+            return RedirectResponse(f"/signals/{signal_id}?error={quote(msg)}", status_code=status.HTTP_303_SEE_OTHER)
+        if any(token in settings.claude_mcp_config for token in ("{", "}", "\n")):
+            msg = (
+                "CLAUDE_MCP_CONFIG must be a FILE PATH (not JSON contents). "
+                "Set it to /Users/janetmillerstier/Code/apollo-hackathon/codex/claude.mcp.json and restart."
+            )
+            return RedirectResponse(f"/signals/{signal_id}?error={quote(msg)}", status_code=status.HTTP_303_SEE_OTHER)
+        config_path = Path(settings.claude_mcp_config).expanduser()
+        if not config_path.exists():
+            msg = f"Claude MCP config file not found at {config_path}. Fix CLAUDE_MCP_CONFIG and restart."
+            return RedirectResponse(f"/signals/{signal_id}?error={quote(msg)}", status_code=status.HTTP_303_SEE_OTHER)
     try:
         agent.find_impacted_customers(signal_id)
     except ValueError as exc:
@@ -179,6 +216,7 @@ def opportunity_detail(
     request: Request,
     repo: Repository = Depends(get_repository),
 ) -> HTMLResponse:
+    settings = get_settings()
     opportunity = repo.get_opportunity(opportunity_id)
     if not opportunity:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="opportunity not found")
@@ -193,6 +231,11 @@ def opportunity_detail(
             "signal": signal,
             "campaigns": campaigns,
             "company": repo.get_company_profile(),
+            "demo_mode": settings.demo_mode,
+            "apollo_configured": bool(settings.apollo_api_key),
+            "openai_configured": bool(settings.openai_api_key),
+            "page_error": request.query_params.get("error"),
+            "page_notice": request.query_params.get("notice"),
         },
     )
 

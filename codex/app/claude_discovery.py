@@ -55,7 +55,8 @@ class ClaudeCompetitorDiscovery:
             return DiscoveryResult(company=company, competitors=competitors, source="fallback", error=str(exc))
 
     def _command(self) -> list[str]:
-        command = ["claude", "-p", "--output-format", "text", "--permission-mode", "dontAsk"]
+        # `-p` is appended by the runner so it always directly precedes the prompt.
+        command = ["claude", "--output-format", "text", "--permission-mode", "dontAsk"]
         if self.max_budget_usd is not None:
             command.extend(["--max-budget-usd", str(self.max_budget_usd)])
         if self.mcp_config:
@@ -89,13 +90,11 @@ Choose 3-5 competitors. Prefer real competitors, but omit fields rather than inv
 
     @staticmethod
     def _run_claude(command: list[str], prompt: str, timeout_seconds: int) -> str:
-        completed = subprocess.run(
-            [*command, prompt],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-        )
+        completed = subprocess.run([*command, "-p", prompt], capture_output=True, text=True, timeout=timeout_seconds)
+        if completed.returncode != 0:
+            stderr = (completed.stderr or "").strip()
+            stdout = (completed.stdout or "").strip()
+            raise RuntimeError(f"claude CLI failed (exit={completed.returncode}). stderr={stderr!r} stdout={stdout!r}")
         return completed.stdout
 
     @classmethod

@@ -56,20 +56,38 @@ def test_dashboard_company_scan_email_and_report_routes(tmp_path: Path) -> None:
         assert agent.repository.get_company_profile().company_name == "Apollo"  # type: ignore[union-attr]
         assert [competitor.name for competitor in agent.repository.list_competitors()] == ["AcmeCRM"]
 
+        pre_scan_dashboard = client.get("/")
+        assert "Run scan to ask Claude" in pre_scan_dashboard.text
+
         response = client.post("/scan", follow_redirects=False)
         assert response.status_code == 303
 
+        opportunity = agent.repository.list_opportunities()[0]
+        signal = agent.repository.list_signals()[0]
         dashboard = client.get("/")
         assert dashboard.status_code == 200
         assert "Company-first setup" in dashboard.text
         assert "Email drafts" in dashboard.text
+        assert "Account map" in dashboard.text
+        assert "relationship-graph" in dashboard.text
+        assert "relationship-graph-scroll" in dashboard.text
+        assert "Loading saved demo data" in dashboard.text
+        assert 'data-demo-loading-ms="12"' in dashboard.text
         assert "loading-overlay" in dashboard.text
         assert "Scanning competitors" in dashboard.text
         assert "/signals/" in dashboard.text
         assert "/reports/competitive-landscape" in dashboard.text
 
-        opportunity = agent.repository.list_opportunities()[0]
-        signal = agent.repository.list_signals()[0]
+        graph = client.get("/graph/displacement.json")
+        assert graph.status_code == 200
+        graph_data = graph.json()
+        node_types = {node["type"] for node in graph_data["nodes"]}
+        assert {"competitor", "customer", "person"} <= node_types
+        assert any(node["label"] == "AcmeCRM" for node in graph_data["nodes"])
+        assert any(node["label"] == opportunity.account.name for node in graph_data["nodes"])
+        assert any(node["label"] == opportunity.contacts[0].full_name for node in graph_data["nodes"])
+        assert {"source", "target", "type"} <= set(graph_data["links"][0])
+
         signal_page = client.get(f"/signals/{signal.id}")
         assert signal_page.status_code == 200
         assert "Find impacted customers" in signal_page.text

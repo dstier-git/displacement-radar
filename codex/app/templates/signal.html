@@ -2,6 +2,20 @@
 {% block content %}
 <a href="/" class="back">← Dashboard</a>
 
+{% if page_error %}
+  <p class="notice warning">{{ page_error }}</p>
+{% endif %}
+{% if page_notice %}
+  <p class="notice">{{ page_notice }}</p>
+{% endif %}
+
+{% if not apollo_configured %}
+  <p class="notice warning">
+    No Apollo emails will appear until <code>APOLLO_API_KEY</code> is set (and the server restarted).
+    You can still discover target accounts via OpenAI.
+  </p>
+{% endif %}
+
 <section class="panel signal-hero">
   <div>
     <p class="eyebrow">{{ signal.competitor_name }} displacement signal</p>
@@ -80,8 +94,21 @@
                     </label>
                   {% endfor %}
                 </div>
+                {% set any_email = opportunity.contacts | selectattr("email") | list | length %}
+                {% if any_email == 0 %}
+                  <p class="muted">
+                    Apollo returned contacts, but no email addresses were available (common for “unverified” records).
+                    Try refreshing, or use LinkedIn URLs.
+                  </p>
+                {% endif %}
               {% else %}
-                <p class="muted">No contacts loaded yet. Refresh impacted customers to search Apollo.</p>
+                {% if not apollo_configured %}
+                  <p class="muted">No contacts yet: <code>APOLLO_API_KEY</code> is not set.</p>
+                {% elif not opportunity.account.domain %}
+                  <p class="muted">No contacts yet: this account has no domain, so Apollo can’t target the org.</p>
+                {% else %}
+                  <p class="muted">No contacts yet: Apollo returned 0 matching decision makers for these titles.</p>
+                {% endif %}
               {% endif %}
               {% if opportunity.source_notes %}
                 <details>

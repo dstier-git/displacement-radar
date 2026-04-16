@@ -46,7 +46,8 @@ class ClaudeSignalDiscovery:
         return evidence
 
     def _command(self) -> list[str]:
-        command = ["claude", "-p", "--output-format", "text", "--permission-mode", "dontAsk"]
+        # `-p` is appended by the runner so it always directly precedes the prompt.
+        command = ["claude", "--output-format", "text", "--permission-mode", "dontAsk"]
         if self.max_budget_usd is not None:
             command.extend(["--max-budget-usd", str(self.max_budget_usd)])
         return command
@@ -77,12 +78,14 @@ Return ONLY strict JSON array, no markdown:
     @staticmethod
     def _run_claude(command: list[str], prompt: str, timeout_seconds: int) -> str:
         completed = subprocess.run(
-            [*command, prompt],
-            check=True,
+            [*command, "-p", prompt],
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
         )
+        if completed.returncode != 0:
+            stderr = completed.stderr.strip() or completed.stdout.strip() or f"exit {completed.returncode}"
+            raise RuntimeError(f"Claude signal discovery failed: {stderr}")
         return completed.stdout
 
     @staticmethod

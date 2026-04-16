@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import logging
+
 from .apollo import ApolloClient
 from .campaign import CampaignGenerator, OpportunityScorer
 from .claude_discovery import ClaudeCompetitorDiscovery, DiscoveryResult
 from .demo_data import demo_competitors
 from .models import ApolloContact, CampaignDraft, CompanyProfile, Competitor, ScanResult
 from .monitor import CompetitorMonitor
-from .prospecting import ClaudeApolloProspector, ProspectCandidate
+from .prospecting import ClaudeApolloProspector, OpenAIProspector, ProspectCandidate
 from .storage import Repository
+
+logger = logging.getLogger(__name__)
 
 
 class DisplacementAgent:
@@ -18,7 +22,8 @@ class DisplacementAgent:
         apollo: ApolloClient,
         scorer: OpportunityScorer,
         campaign_generator: CampaignGenerator,
-        prospector: ClaudeApolloProspector | None = None,
+        prospector: ClaudeApolloProspector | OpenAIProspector | None = None,
+        prefer_claude_mcp_prospecting: bool = False,
         max_competitors_per_scan: int = 4,
         max_customers_per_competitor: int = 5,
     ):
@@ -28,6 +33,7 @@ class DisplacementAgent:
         self.scorer = scorer
         self.campaign_generator = campaign_generator
         self.prospector = prospector
+        self.prefer_claude_mcp_prospecting = prefer_claude_mcp_prospecting
         self.max_competitors_per_scan = max(1, max_competitors_per_scan)
         self.max_customers_per_competitor = max(1, max_customers_per_competitor)
 
@@ -124,7 +130,16 @@ class DisplacementAgent:
             raise ValueError("competitor not found")
 
         candidates: list[ProspectCandidate] = []
-        if self.prospector and not self.apollo.demo_mode:
+
+        # Claude + Apollo MCP path (matches the standalone HTML demo behavior most closely).
+        # When enabled, try it first; fall back to Apollo REST if it returns nothing.
+        if (
+            not candidates
+            and self.prefer_claude_mcp_prospecting
+            and self.prospector
+            and isinstance(self.prospector, ClaudeApolloProspector)
+            and not self.apollo.demo_mode
+        ):
             try:
                 candidates = self.prospector.find_impacted_customers(
                     signal,
@@ -132,7 +147,64 @@ class DisplacementAgent:
                     self.repository.get_company_profile(),
                     limit=self.max_customers_per_competitor,
                 )
-            except Exception:
+            except Exception as exc:
+                logger.warning(
+                    "claude_mcp_prospector.failed competitor=%s signal_id=%s error=%s",
+                    competitor.name,
+                    signal.id,
+                    exc,
+                    exc_info=True,
+                )
+                candidates = []
+
+        # Apollo-first path (matches the standalone HTML demo behavior):
+        # use Apollo to find both companies and decision makers in one pass.
+        if not candidates and (self.apollo.demo_mode or self.apollo.api_key):
+            try:
+                pairs = self.apollo.search_prospects(competitor, signal, limit=self.max_customers_per_competitor)
+            except Exception as exc:
+                logger.warning(
+                    "apollo.search_prospects.failed competitor=%s signal_id=%s error=%s",
+                    competitor.name,
+                    signal.id,
+                    exc,
+                    exc_info=True,
+                )
+                pairs = []
+            for account, contacts in pairs:
+                if self._is_competitor_self_account(account, competitor):
+                    continue
+                candidates.append(
+                    ProspectCandidate(
+                        account=account,
+                        contacts=contacts,
+                        impact_summary=(
+                            f"{account.name} may be vulnerable to {signal.competitor_name}'s recent signal: "
+                            f"{signal.pain_hypothesis} {signal.recommended_angle}"
+                        ),
+                        competitor_usage_confidence="verified"
+                        if signal.competitor_name in (account.technologies or [])
+                        else "likely",
+                        source_notes=[f"Found through Apollo people+account search for {signal.competitor_name}."],
+                    )
+                )
+
+        if not candidates and self.prospector and not self.apollo.demo_mode:
+            try:
+                candidates = self.prospector.find_impacted_customers(
+                    signal,
+                    competitor,
+                    self.repository.get_company_profile(),
+                    limit=self.max_customers_per_competitor,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "prospector.failed competitor=%s signal_id=%s error=%s",
+                    competitor.name,
+                    signal.id,
+                    exc,
+                    exc_info=True,
+                )
                 candidates = []
 
         if not candidates and (self.apollo.demo_mode or self.apollo.api_key):
@@ -142,6 +214,8 @@ class DisplacementAgent:
                 accounts = []
             candidates = []
             for account in accounts:
+                if self._is_competitor_self_account(account, competitor):
+                    continue
                 try:
                     contacts = self.apollo.search_contacts(account, signal)[:5]
                 except Exception:
@@ -161,8 +235,46 @@ class DisplacementAgent:
                     )
                 )
 
+        # If candidates came from OpenAI (or any non-Apollo source) and we have an Apollo key,
+        # enrich them with decision-maker contacts now so the UI immediately shows emails.
+        if candidates and (not self.apollo.demo_mode) and self.apollo.api_key:
+            enriched: list[ProspectCandidate] = []
+            for candidate in candidates:
+                if candidate.contacts:
+                    enriched.append(candidate)
+                    continue
+                try:
+                    contacts = self.apollo.search_contacts(candidate.account, signal)[:5]
+                except Exception as exc:
+                    logger.info(
+                        "apollo_contacts.enrichment_failed account=%s domain=%s signal_id=%s error=%s",
+                        candidate.account.name,
+                        candidate.account.domain,
+                        signal.id,
+                        exc,
+                        exc_info=True,
+                    )
+                    contacts = []
+                enriched.append(
+                    ProspectCandidate(
+                        account=candidate.account,
+                        contacts=contacts,
+                        impact_summary=candidate.impact_summary,
+                        competitor_usage_confidence=candidate.competitor_usage_confidence,
+                        source_notes=candidate.source_notes,
+                    )
+                )
+            candidates = enriched
+
         opportunities = []
+        replacement_keys = {
+            self._account_key(candidate.account)
+            for candidate in candidates
+            if self._account_key(candidate.account) and not self._is_competitor_self_account(candidate.account, competitor)
+        }
         for candidate in candidates:
+            if self._is_competitor_self_account(candidate.account, competitor):
+                continue
             existing = self._find_opportunity(signal.id, candidate.account.domain or candidate.account.name)
             if existing:
                 existing.contacts = candidate.contacts or existing.contacts
@@ -182,6 +294,8 @@ class DisplacementAgent:
             opportunity.source_notes = candidate.source_notes or opportunity.source_notes
             self.repository.save_opportunity(opportunity)
             opportunities.append(opportunity)
+        if replacement_keys:
+            self._delete_stale_opportunities(signal.id, replacement_keys)
         return opportunities
 
     def generate_emails_for_contacts(self, opportunity_id: str, contact_ids: list[str]) -> list[CampaignDraft]:
@@ -233,6 +347,29 @@ class DisplacementAgent:
             if existing == normalized:
                 return opportunity
         return None
+
+    @staticmethod
+    def _account_key(account) -> str:
+        return (account.domain or account.name or "").strip().lower()
+
+    @staticmethod
+    def _is_competitor_self_account(account, competitor: Competitor) -> bool:
+        account_name = (account.name or "").strip().lower()
+        competitor_name = competitor.name.strip().lower()
+        if account_name == competitor_name:
+            return True
+        account_domain = (account.domain or "").strip().lower().removeprefix("www.")
+        if not account_domain:
+            return False
+        guessed_domain = f"{competitor_name.replace(' ', '')}.com"
+        guessed_io_domain = f"{competitor_name.replace(' ', '')}.io"
+        return account_domain in {guessed_domain, guessed_io_domain}
+
+    def _delete_stale_opportunities(self, signal_id: str, replacement_keys: set[str]) -> None:
+        for opportunity in self.repository.list_opportunities(signal_id=signal_id):
+            if self._account_key(opportunity.account) in replacement_keys:
+                continue
+            self.repository.delete_opportunity(opportunity.id)
 
     def _campaign_exists_for_contact(self, opportunity_id: str, contact: ApolloContact) -> bool:
         contact_key = contact.id or contact.full_name

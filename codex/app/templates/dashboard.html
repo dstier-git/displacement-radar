@@ -29,10 +29,322 @@
   <article><strong>{{ campaigns|length }}</strong><span>Email drafts</span></article>
 </section>
 
+<section class="panel relationship-panel">
+  <div class="relationship-header">
+    <div>
+      <p class="eyebrow">Account map</p>
+      <h2>Competitors → customers → people</h2>
+      <p class="muted">Drag or scroll the map to move around. Click a node to inspect the relationship.</p>
+    </div>
+    <div class="graph-stats" aria-label="Relationship graph summary">
+      <span><strong>{{ relationship_graph.summary.competitors }}</strong> competitors</span>
+      <span><strong>{{ relationship_graph.summary.customers }}</strong> customers</span>
+      <span><strong>{{ relationship_graph.summary.people }}</strong> people</span>
+    </div>
+  </div>
+  <div class="graph-toolbar" role="group" aria-label="Graph filters">
+    <button type="button" class="graph-filter active" data-graph-filter="all">All</button>
+    <button type="button" class="graph-filter" data-graph-filter="competitor">Competitors</button>
+    <button type="button" class="graph-filter" data-graph-filter="customer">Customers</button>
+    <button type="button" class="graph-filter" data-graph-filter="person">People</button>
+  </div>
+  <div class="relationship-map">
+    <div id="relationship-graph-scroll" class="graph-scroll">
+      <svg id="relationship-graph" role="img" aria-label="Competitors mapped to customer accounts and people" viewBox="0 0 1400 680"></svg>
+    </div>
+    <aside id="relationship-detail" class="relationship-detail" aria-live="polite">
+      <h3>Select a node</h3>
+      <p class="muted">Competitors sit on top, customer accounts in the middle, and decision makers along the bottom.</p>
+    </aside>
+  </div>
+  <script id="relationship-graph-data" type="application/json">{{ relationship_graph|tojson }}</script>
+</section>
+
+<script>
+(() => {
+  const dataElement = document.getElementById('relationship-graph-data');
+  const svg = document.getElementById('relationship-graph');
+  const scrollFrame = document.getElementById('relationship-graph-scroll');
+  const detail = document.getElementById('relationship-detail');
+  if (!dataElement || !svg || !scrollFrame || !detail) return;
+
+  const graph = JSON.parse(dataElement.textContent || '{"nodes":[],"links":[]}');
+  const nodes = graph.nodes || [];
+  const links = graph.links || [];
+  const ns = 'http://www.w3.org/2000/svg';
+  const nodeWidth = 152;
+  const columnGap = 52;
+  const rowGap = 92;
+  const marginX = 104;
+  const marginY = 70;
+  const renderedScale = 0.72;
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const neighbors = new Map(nodes.map((node) => [node.id, new Set([node.id])]));
+  let activeFilter = 'all';
+  let selectedId = null;
+  let canvas = { width: 1400, height: 680 };
+  let isPanning = false;
+  let suppressClick = false;
+  let panStart = { x: 0, y: 0, left: 0, top: 0 };
+
+  links.forEach((link) => {
+    neighbors.get(link.source)?.add(link.target);
+    neighbors.get(link.target)?.add(link.source);
+  });
+
+  function clip(value, limit) {
+    const text = String(value || '');
+    return text.length > limit ? `${text.slice(0, limit - 1)}…` : text;
+  }
+
+  function createSvg(tag, attrs = {}) {
+    const element = document.createElementNS(ns, tag);
+    Object.entries(attrs).forEach(([key, value]) => element.setAttribute(key, String(value)));
+    return element;
+  }
+
+  function rowsFor(type, count) {
+    if (type === 'competitor') return count > 10 ? 2 : 1;
+    if (type === 'customer') return Math.min(4, Math.max(2, Math.ceil(count / 10)));
+    if (type === 'person') return Math.min(5, Math.max(2, Math.ceil(count / 10)));
+    return 1;
+  }
+
+  function yStartFor(type, customerRows) {
+    if (type === 'competitor') return marginY;
+    if (type === 'customer') return 238;
+    if (type === 'person') return 238 + customerRows * rowGap + 120;
+    return marginY;
+  }
+
+  function applyCanvasSize() {
+    svg.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
+    svg.style.width = `${Math.round(canvas.width * renderedScale)}px`;
+    svg.style.height = `${Math.round(canvas.height * renderedScale)}px`;
+  }
+
+  function layoutNodes() {
+    const ordered = [...nodes].sort((a, b) => {
+      const typeOrder = { competitor: 0, customer: 1, person: 2 };
+      return (typeOrder[a.type] - typeOrder[b.type]) || String(a.label).localeCompare(String(b.label));
+    });
+    const grouped = ordered.reduce((acc, node) => {
+      acc[node.type] = acc[node.type] || [];
+      acc[node.type].push(node);
+      return acc;
+    }, {});
+
+    const customerRows = rowsFor('customer', grouped.customer?.length || 0);
+    let maxColumns = 1;
+    let maxY = 0;
+
+    Object.entries(grouped).forEach(([type, list]) => {
+      const rowCount = rowsFor(type, list.length);
+      const columns = Math.max(1, Math.ceil(list.length / rowCount));
+      const yStart = yStartFor(type, customerRows);
+      const yValues = Array.from({ length: rowCount }, (_, index) => yStart + index * rowGap);
+      maxColumns = Math.max(maxColumns, columns);
+      maxY = Math.max(maxY, yValues[yValues.length - 1] || yStart);
+      list.forEach((node, index) => {
+        const row = index % rowCount;
+        const column = Math.floor(index / rowCount);
+        node.x = marginX + column * (nodeWidth + columnGap);
+        node.y = yValues[row];
+      });
+    });
+
+    canvas = {
+      width: Math.max(1400, marginX * 2 + maxColumns * nodeWidth + Math.max(0, maxColumns - 1) * columnGap),
+      height: Math.max(680, maxY + marginY),
+    };
+    applyCanvasSize();
+  }
+
+  function nodeClasses(node) {
+    const classes = ['graph-node', node.type];
+    if (selectedId === node.id) classes.push('selected');
+    if (activeFilter !== 'all' && node.type !== activeFilter) classes.push('filtered');
+    if (selectedId && !neighbors.get(selectedId)?.has(node.id)) classes.push('dimmed');
+    return classes.join(' ');
+  }
+
+  function linkClasses(link) {
+    const source = nodeById.get(link.source);
+    const target = nodeById.get(link.target);
+    const classes = ['graph-link', link.type];
+    if (activeFilter !== 'all' && source?.type !== activeFilter && target?.type !== activeFilter) {
+      classes.push('filtered');
+    }
+    if (selectedId && link.source !== selectedId && link.target !== selectedId) {
+      classes.push('dimmed');
+    }
+    return classes.join(' ');
+  }
+
+  function render() {
+    svg.replaceChildren();
+    if (!nodes.length) {
+      applyCanvasSize();
+      const empty = createSvg('text', { x: canvas.width / 2, y: canvas.height / 2, 'text-anchor': 'middle', class: 'graph-empty' });
+      empty.textContent = 'Discover competitors to start the relationship map.';
+      svg.appendChild(empty);
+      return;
+    }
+
+    layoutNodes();
+
+    links.forEach((link) => {
+      const source = nodeById.get(link.source);
+      const target = nodeById.get(link.target);
+      if (!source || !target) return;
+      const line = createSvg('line', {
+        x1: source.x,
+        y1: source.y,
+        x2: target.x,
+        y2: target.y,
+        class: linkClasses(link)
+      });
+      svg.appendChild(line);
+    });
+
+    nodes.forEach((node) => {
+      const group = createSvg('g', {
+        class: nodeClasses(node),
+        transform: `translate(${node.x}, ${node.y})`,
+        tabindex: 0,
+        role: 'button',
+        'aria-label': `${node.type}: ${node.label}`
+      });
+      const rect = createSvg('rect', { x: -76, y: -27, width: 152, height: 54, rx: 8 });
+      const label = createSvg('text', { x: 0, y: -4, 'text-anchor': 'middle', class: 'node-label' });
+      const subtitle = createSvg('text', { x: 0, y: 15, 'text-anchor': 'middle', class: 'node-subtitle' });
+      const title = createSvg('title');
+      label.textContent = clip(node.label, 19);
+      subtitle.textContent = clip(node.subtitle || node.type, 22);
+      title.textContent = `${node.label} - ${node.subtitle || node.type}`;
+      group.append(rect, label, subtitle, title);
+      group.addEventListener('click', () => {
+        if (suppressClick) return;
+        selectNode(node.id);
+      });
+      group.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          selectNode(node.id);
+        }
+      });
+      svg.appendChild(group);
+    });
+  }
+
+  function appendLine(label, value) {
+    if (value === undefined || value === null || value === '') return;
+    const row = document.createElement('p');
+    const strong = document.createElement('strong');
+    strong.textContent = `${label}: `;
+    row.append(strong, document.createTextNode(String(value)));
+    detail.appendChild(row);
+  }
+
+  function selectNode(nodeId) {
+    selectedId = nodeId;
+    const node = nodeById.get(nodeId);
+    detail.replaceChildren();
+    if (!node) return;
+
+    const title = document.createElement('h3');
+    title.textContent = node.label;
+    const subtitle = document.createElement('p');
+    subtitle.className = 'muted';
+    subtitle.textContent = `${node.type.charAt(0).toUpperCase()}${node.type.slice(1)} · ${node.subtitle || ''}`;
+    const description = document.createElement('p');
+    description.textContent = node.detail || '';
+    detail.append(title, subtitle, description);
+
+    appendLine('Fit score', node.fitScore);
+    appendLine('Contacts', node.contactCount);
+    appendLine('Email', node.email);
+    appendLine('Email status', node.emailStatus);
+    appendLine('Confidence', node.confidence);
+
+    if (node.href) {
+      const link = document.createElement('a');
+      link.className = 'button-link';
+      link.href = node.href;
+      link.textContent = node.type === 'person' && String(node.href).startsWith('http') ? 'Open profile' : 'Open record';
+      if (String(node.href).startsWith('http')) {
+        link.target = '_blank';
+        link.rel = 'noreferrer';
+      }
+      detail.appendChild(link);
+    }
+
+    render();
+  }
+
+  document.querySelectorAll('.graph-filter').forEach((button) => {
+    button.addEventListener('click', () => {
+      activeFilter = button.dataset.graphFilter || 'all';
+      document.querySelectorAll('.graph-filter').forEach((item) => item.classList.toggle('active', item === button));
+      render();
+    });
+  });
+
+  scrollFrame.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    isPanning = true;
+    suppressClick = false;
+    panStart = {
+      x: event.clientX,
+      y: event.clientY,
+      left: scrollFrame.scrollLeft,
+      top: scrollFrame.scrollTop
+    };
+    scrollFrame.classList.add('dragging');
+    scrollFrame.setPointerCapture(event.pointerId);
+  });
+
+  scrollFrame.addEventListener('pointermove', (event) => {
+    if (!isPanning) return;
+    const dx = event.clientX - panStart.x;
+    const dy = event.clientY - panStart.y;
+    if (Math.abs(dx) + Math.abs(dy) > 4) suppressClick = true;
+    scrollFrame.scrollLeft = panStart.left - dx;
+    scrollFrame.scrollTop = panStart.top - dy;
+  });
+
+  function stopPanning(event) {
+    if (!isPanning) return;
+    isPanning = false;
+    scrollFrame.classList.remove('dragging');
+    if (scrollFrame.hasPointerCapture(event.pointerId)) {
+      scrollFrame.releasePointerCapture(event.pointerId);
+    }
+    setTimeout(() => { suppressClick = false; }, 0);
+  }
+
+  scrollFrame.addEventListener('pointerup', stopPanning);
+  scrollFrame.addEventListener('pointercancel', stopPanning);
+
+  render();
+  requestAnimationFrame(() => {
+    scrollFrame.scrollLeft = Math.max(0, (svg.clientWidth - scrollFrame.clientWidth) / 2);
+  });
+})();
+</script>
+
 <section class="panel action-panel">
   <div>
     <h2>Scan and report</h2>
     <p class="muted">Run codex's scanner across the Claude-discovered competitors, then export the landscape report.</p>
+    {% if competitors and not scan_runs %}
+      <p class="notice warning">Competitors are loaded, but no scan has completed yet. Run scan to ask Claude for article-backed signals.</p>
+    {% elif scan_runs and scan_runs[0].signals_created == 0 %}
+      <p class="notice warning">
+        Last scan found 0 article-backed signals. Check that Claude CLI is logged in and can return source URLs:
+        <code>python scripts/check_claude_signals.py "{{ competitors[0].name if competitors else 'Competitor' }}"</code>
+      </p>
+    {% endif %}
   </div>
   <div class="button-row">
     <form action="/scan" method="post" data-loading-message="Scanning competitors">

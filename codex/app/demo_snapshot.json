@@ -1,0 +1,243 @@
+{
+    "campaign_drafts": {},
+    "company_profiles": {
+        "current": {
+            "category": "AI Application Security / Code Analysis",
+            "company_name": "specular ai",
+            "created_at": "2026-04-16T19:14:49.437550Z",
+            "id": "current",
+            "positioning": "Specular AI uses AI to automatically find and fix security vulnerabilities in application code, reducing manual security review burden for engineering teams.",
+            "website": "https://specular.ai"
+        }
+    },
+    "competitors": {
+        "39f2d5db-69ca-47c0-9bb7-90176d48f65d": {
+            "category": "Static Application Security Testing (SAST)",
+            "created_at": "2026-04-16T19:14:49.438147Z",
+            "customer_domains": [
+                "semgrep.dev"
+            ],
+            "id": "39f2d5db-69ca-47c0-9bb7-90176d48f65d",
+            "name": "Semgrep",
+            "product_positioning": "Buyers evaluate Semgrep for customizable static analysis rules and OSS-friendly pricing alongside AI-assisted remediation",
+            "technology_uid": null
+        },
+        "724eb3ee-89c1-4bc6-8d93-9df1782fbfe0": {
+            "category": "AI-augmented SAST / Code Scanning",
+            "created_at": "2026-04-16T19:14:49.438164Z",
+            "customer_domains": [
+                "github.com"
+            ],
+            "id": "724eb3ee-89c1-4bc6-8d93-9df1782fbfe0",
+            "name": "GitHub Advanced Security (CodeQL)",
+            "product_positioning": "GitHub-native teams compare CodeQL for deep semantic analysis and Copilot Autofix for AI-generated remediation within the same workflow",
+            "technology_uid": null
+        },
+        "a7812643-efa3-49e7-909a-544f854672c4": {
+            "category": "Application Security / Developer-first SAST",
+            "created_at": "2026-04-16T19:14:49.438105Z",
+            "customer_domains": [
+                "snyk.io"
+            ],
+            "id": "a7812643-efa3-49e7-909a-544f854672c4",
+            "name": "Snyk",
+            "product_positioning": "Developers compare Snyk for its broad language support, IDE integrations, and fix suggestions for code and dependency vulnerabilities",
+            "technology_uid": null
+        },
+        "b47598d4-612f-44e4-965c-17ca1fa1c13d": {
+            "category": "Cloud-native Application Security Posture",
+            "created_at": "2026-04-16T19:14:49.438176Z",
+            "customer_domains": [
+                "aikido.dev"
+            ],
+            "id": "b47598d4-612f-44e4-965c-17ca1fa1c13d",
+            "name": "Aikido Security",
+            "product_positioning": "SMB and mid-market teams compare Aikido for consolidated SAST, SCA, secret scanning, and cloud posture in one platform",
+            "technology_uid": null
+        },
+        "bbe7c1c9-d8aa-4fc1-8e8a-493fd507e4bf": {
+            "category": "Software Supply Chain / Dependency Security",
+            "created_at": "2026-04-16T19:14:49.438187Z",
+            "customer_domains": [
+                "socket.dev"
+            ],
+            "id": "bbe7c1c9-d8aa-4fc1-8e8a-493fd507e4bf",
+            "name": "Socket Security",
+            "product_positioning": "Teams concerned with open-source risk compare Socket for real-time malicious package detection and supply-chain attack prevention",
+            "technology_uid": null
+        }
+    },
+    "opportunities": {},
+    "scan_runs": {
+        "26160a84-0a29-488f-9393-6372c1fdbd70": {
+            "campaigns_created": 0,
+            "competitors_scanned": 4,
+            "created_at": "2026-04-16T19:43:40.901391Z",
+            "opportunities_created": 0,
+            "scan_run_id": "26160a84-0a29-488f-9393-6372c1fdbd70",
+            "signals_created": 8
+        }
+    },
+    "signals": {
+        "1facc699-d71c-466f-a552-46fb2d7e7d17": {
+            "competitor_id": "724eb3ee-89c1-4bc6-8d93-9df1782fbfe0",
+            "competitor_name": "GitHub Advanced Security (CodeQL)",
+            "detected_at": "2026-04-16T19:41:51.272055Z",
+            "evidence": [
+                {
+                    "published_at": "2026-01-01T00:00:00",
+                    "snippet": "As of early 2026, GitHub Advanced Security's mindshare in the Application Security Tools category fell to 4.3%, down from 7.8% the prior year. Users cite lack of a centralized cross-project dashboard, difficult deployment, and high per-committer costs as top complaints.",
+                    "title": "GitHub Advanced Security mindshare drops from 7.8% to 4.3% as pricing restructure draws criticism",
+                    "url": "https://www.peerspot.com/products/github-advanced-security-reviews"
+                }
+            ],
+            "headline": "GitHub Advanced Security mindshare drops from 7.8% to 4.3% as pricing restructure draws criticism",
+            "id": "1facc699-d71c-466f-a552-46fb2d7e7d17",
+            "pain_hypothesis": "buyers are likely under pressure to justify renewal cost and compare lower-friction alternatives.",
+            "recommended_angle": "Offer a cost-neutral pilot and renewal benchmark.",
+            "severity": "high",
+            "type": "price_increase",
+            "urgency_score": 82
+        },
+        "5bd4f23e-dc91-4c71-acab-272fb2d5b728": {
+            "competitor_id": "39f2d5db-69ca-47c0-9bb7-90176d48f65d",
+            "competitor_name": "Semgrep",
+            "detected_at": "2026-04-16T19:40:35.675415Z",
+            "evidence": [
+                {
+                    "published_at": "2026-02-01T00:00:00",
+                    "snippet": "In February 2026, Codacy publicly announced it was replacing Semgrep with Opengrep across its platform, citing the preservation of open-source capabilities removed by Semgrep Inc., while maintaining full rule and configuration compatibility for existing users.",
+                    "title": "Codacy migrates from Semgrep to Opengrep as 1:1 replacement",
+                    "url": "https://docs.codacy.com/release-notes/cloud/cloud-2026-02-migrating-semgrep/"
+                }
+            ],
+            "headline": "Codacy migrates from Semgrep to Opengrep as 1:1 replacement",
+            "id": "5bd4f23e-dc91-4c71-acab-272fb2d5b728",
+            "pain_hypothesis": "customers may worry about roadmap continuity and account support stability.",
+            "recommended_angle": "Offer roadmap certainty and executive-alignment messaging.",
+            "severity": "high",
+            "type": "executive_departure",
+            "urgency_score": 82
+        },
+        "750c11e3-d680-4700-8be6-58dcbf3803a8": {
+            "competitor_id": "a7812643-efa3-49e7-909a-544f854672c4",
+            "competitor_name": "Snyk",
+            "detected_at": "2026-04-16T19:39:18.136190Z",
+            "evidence": [
+                {
+                    "published_at": null,
+                    "snippet": "Snyk CEO Peter McKay stepped down, stating the next chapter requires a 'visionary, AI-immersed leader.' Founder Guy Podjarny had also already exited, signaling instability at the top amid a competitive AI-security market.",
+                    "title": "Snyk CEO steps down, citing need for AI-immersed leadership",
+                    "url": "https://www.thestack.technology/snyk-ceo-steps-down-better-ai-knowledge/"
+                }
+            ],
+            "headline": "Snyk CEO steps down, citing need for AI-immersed leadership",
+            "id": "750c11e3-d680-4700-8be6-58dcbf3803a8",
+            "pain_hypothesis": "customers may worry about roadmap continuity and account support stability.",
+            "recommended_angle": "Offer roadmap certainty and executive-alignment messaging.",
+            "severity": "high",
+            "type": "executive_departure",
+            "urgency_score": 82
+        },
+        "a6e894d1-c43c-4bf3-81d3-7f5dc1668732": {
+            "competitor_id": "39f2d5db-69ca-47c0-9bb7-90176d48f65d",
+            "competitor_name": "Semgrep",
+            "detected_at": "2026-04-16T19:40:35.675378Z",
+            "evidence": [
+                {
+                    "published_at": "2025-01-01T00:00:00",
+                    "snippet": "In January 2025, a consortium of appsec companies (Aikido, Endor Labs, Jit, Orca Security, and others) forked Semgrep CE after Semgrep Inc. moved cross-function taint analysis and other critical features behind its commercial platform, triggering widespread community backlash over the December 2024 license change.",
+                    "title": "Security rivals fork Semgrep OSS into 'Opengrep' after feature lockdown behind commercial license",
+                    "url": "https://www.kodemsecurity.com/resources/press-release-security-rivals-unite-to-launch-opengrep-following-semgrep-clampdown"
+                }
+            ],
+            "headline": "Security rivals fork Semgrep OSS into 'Opengrep' after feature lockdown behind commercial license",
+            "id": "a6e894d1-c43c-4bf3-81d3-7f5dc1668732",
+            "pain_hypothesis": "customers may worry about roadmap continuity and account support stability.",
+            "recommended_angle": "Offer roadmap certainty and executive-alignment messaging.",
+            "severity": "high",
+            "type": "executive_departure",
+            "urgency_score": 82
+        },
+        "b0d02c5e-9f54-44ce-9f6b-38c58cee33bc": {
+            "competitor_id": "724eb3ee-89c1-4bc6-8d93-9df1782fbfe0",
+            "competitor_name": "GitHub Advanced Security (CodeQL)",
+            "detected_at": "2026-04-16T19:41:51.272122Z",
+            "evidence": [
+                {
+                    "published_at": "2026-02-01T00:00:00",
+                    "snippet": "On February 2, 2026, GitHub Actions, CodeQL, Dependabot, and Codespaces were unavailable for ~3h45m due to hosted runner failures during the platform's ongoing Azure datacenter migration, which has been a source of recurring instability since October 2025.",
+                    "title": "February 2026 GitHub outage takes down CodeQL, Dependabot, and Copilot for nearly 4 hours",
+                    "url": "https://github.blog/news-insights/company-news/github-availability-report-february-2026/"
+                }
+            ],
+            "headline": "February 2026 GitHub outage takes down CodeQL, Dependabot, and Copilot for nearly 4 hours",
+            "id": "b0d02c5e-9f54-44ce-9f6b-38c58cee33bc",
+            "pain_hypothesis": "operators may be questioning reliability, contingency plans, and vendor accountability.",
+            "recommended_angle": "Offer a resilience comparison and migration risk review.",
+            "severity": "high",
+            "type": "outage",
+            "urgency_score": 82
+        },
+        "c9f66ee1-8ba6-495b-b79b-c6bfe498a2fa": {
+            "competitor_id": "b47598d4-612f-44e4-965c-17ca1fa1c13d",
+            "competitor_name": "Aikido Security",
+            "detected_at": "2026-04-16T19:43:04.698376Z",
+            "evidence": [
+                {
+                    "published_at": null,
+                    "snippet": "G2 reviewers note the entry-level paid tier (~$250-350/mo) is a barrier for smaller teams, with some users flagging the cost as disproportionate relative to competitors offering similar SAST/SCA coverage at lower price points.",
+                    "title": "Aikido Security Reviews 2026 \u2014 Pricing Concerns for Smaller Teams",
+                    "url": "https://www.g2.com/products/aikido-security/reviews"
+                }
+            ],
+            "headline": "Aikido Security Reviews 2026 \u2014 Pricing Concerns for Smaller Teams",
+            "id": "c9f66ee1-8ba6-495b-b79b-c6bfe498a2fa",
+            "pain_hypothesis": "buyers are likely under pressure to justify renewal cost and compare lower-friction alternatives.",
+            "recommended_angle": "Offer a cost-neutral pilot and renewal benchmark.",
+            "severity": "high",
+            "type": "price_increase",
+            "urgency_score": 82
+        },
+        "ec37cb1a-9ced-4169-a006-028c5a2a67c7": {
+            "competitor_id": "a7812643-efa3-49e7-909a-544f854672c4",
+            "competitor_name": "Snyk",
+            "detected_at": "2026-04-16T19:39:18.136253Z",
+            "evidence": [
+                {
+                    "published_at": "2025-07-11T00:00:00",
+                    "snippet": "Snyk conducted its fourth round of layoffs in three years in July 2025, with employees citing poor handling of severance and missed unemployment claim deadlines, fueling negative Glassdoor sentiment.",
+                    "title": "Cyber startup Snyk undergoes fresh wave of job cuts",
+                    "url": "https://tech.eu/2025/07/11/cyber-startup-snyk-undergoes-fresh-wave-of-job-cuts/"
+                }
+            ],
+            "headline": "Cyber startup Snyk undergoes fresh wave of job cuts",
+            "id": "ec37cb1a-9ced-4169-a006-028c5a2a67c7",
+            "pain_hypothesis": "champions may be losing internal confidence because peers are surfacing similar complaints.",
+            "recommended_angle": "Offer a peer-backed alternative workflow audit.",
+            "severity": "medium",
+            "type": "review_wave",
+            "urgency_score": 62
+        },
+        "f1b8cfab-33ce-4d25-94a5-e30c8eb04b03": {
+            "competitor_id": "b47598d4-612f-44e4-965c-17ca1fa1c13d",
+            "competitor_name": "Aikido Security",
+            "detected_at": "2026-04-16T19:43:04.698330Z",
+            "evidence": [
+                {
+                    "published_at": "2025-09-24T00:00:00",
+                    "snippet": "Aikido Security acquired both Allseek and Haicker in September 2025 to automate penetration testing, signaling a platform expansion that may introduce integration friction and pricing changes for existing customers focused on ASPM.",
+                    "title": "Aikido Security Acquires Allseek and Haicker, Expanding Platform Scope",
+                    "url": "https://www.securitysystemsnews.com/article/aikido-security-acquires-allseek-and-haicker"
+                }
+            ],
+            "headline": "Aikido Security Acquires Allseek and Haicker, Expanding Platform Scope",
+            "id": "f1b8cfab-33ce-4d25-94a5-e30c8eb04b03",
+            "pain_hypothesis": "buyers are likely under pressure to justify renewal cost and compare lower-friction alternatives.",
+            "recommended_angle": "Offer a cost-neutral pilot and renewal benchmark.",
+            "severity": "high",
+            "type": "price_increase",
+            "urgency_score": 82
+        }
+    }
+}

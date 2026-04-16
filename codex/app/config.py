@@ -10,6 +10,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "Competitor Displacement Agent"
     apollo_api_key: str | None = Field(default=None, alias="APOLLO_API_KEY")
+    openai_api_key: str | None = Field(default=None, alias="OPENAI_API_KEY")
+    openai_model: str = Field(default="gpt-4.1-mini", alias="OPENAI_MODEL")
     google_cloud_project: str | None = Field(default=None, alias="GOOGLE_CLOUD_PROJECT")
     google_cloud_location: str = Field(default="global", alias="GOOGLE_CLOUD_LOCATION")
     vertex_model: str = Field(default="gemini-2.5-flash", alias="VERTEX_MODEL")
@@ -19,10 +21,12 @@ class Settings(BaseSettings):
     claude_max_budget_usd: float | None = Field(default=0.25, alias="CLAUDE_MAX_BUDGET_USD")
     claude_timeout_seconds: int = Field(default=45, alias="CLAUDE_TIMEOUT_SECONDS")
     claude_draft_emails: bool = Field(default=False, alias="CLAUDE_DRAFT_EMAILS")
+    prefer_claude_mcp_prospecting: bool = Field(default=False, alias="PREFER_CLAUDE_MCP_PROSPECTING")
     max_competitors_per_scan: int = Field(default=4, alias="MAX_COMPETITORS_PER_SCAN")
     max_customers_per_competitor: int = Field(default=5, alias="MAX_CUSTOMERS_PER_COMPETITOR")
     demo_mode: bool = Field(default=False, alias="DEMO_MODE")
     data_path: Path = Field(default=Path(".data/displacement-agent.json"), alias="DATA_PATH")
+    seed_data_path: Path | None = Field(default=Path("app/demo_snapshot.json"), alias="SEED_DATA_PATH")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
