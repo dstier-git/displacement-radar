@@ -19,6 +19,8 @@ class DisplacementAgent:
         scorer: OpportunityScorer,
         campaign_generator: CampaignGenerator,
         prospector: ClaudeApolloProspector | None = None,
+        max_competitors_per_scan: int = 4,
+        max_customers_per_competitor: int = 5,
     ):
         self.repository = repository
         self.monitor = monitor
@@ -26,6 +28,8 @@ class DisplacementAgent:
         self.scorer = scorer
         self.campaign_generator = campaign_generator
         self.prospector = prospector
+        self.max_competitors_per_scan = max(1, max_competitors_per_scan)
+        self.max_customers_per_competitor = max(1, max_customers_per_competitor)
 
     def seed_demo_if_empty(self) -> None:
         if self.repository.list_competitors():
@@ -72,7 +76,7 @@ class DisplacementAgent:
         return competitor
 
     def run_scan(self) -> ScanResult:
-        competitors = self.repository.list_competitors()
+        competitors = self.repository.list_competitors()[: self.max_competitors_per_scan]
         signals_created = opportunities_created = campaigns_created = 0
 
         for competitor in competitors:
@@ -84,13 +88,10 @@ class DisplacementAgent:
                     self.repository.save_signal(signal)
                     signals_created += 1
 
-                for account in self.apollo.search_accounts(competitor, signal)[:5]:
-                    contacts = self.apollo.search_contacts(account, signal)[:3]
-                    opportunity = self.scorer.score(signal, account, contacts)
-                    if self._opportunity_exists(signal.id, account.domain or account.name):
-                        continue
-                    self.repository.save_opportunity(opportunity)
-                    opportunities_created += 1
+                before = len(self.repository.list_opportunities(signal_id=signal.id))
+                self.find_impacted_customers(signal.id)
+                after = len(self.repository.list_opportunities(signal_id=signal.id))
+                opportunities_created += max(0, after - before)
 
         result = ScanResult(
             competitors_scanned=len(competitors),
@@ -129,13 +130,14 @@ class DisplacementAgent:
                     signal,
                     competitor,
                     self.repository.get_company_profile(),
+                    limit=self.max_customers_per_competitor,
                 )
             except Exception:
                 candidates = []
 
         if not candidates and (self.apollo.demo_mode or self.apollo.api_key):
             try:
-                accounts = self.apollo.search_accounts(competitor, signal)[:8]
+                accounts = self.apollo.search_accounts(competitor, signal)[: self.max_customers_per_competitor]
             except Exception:
                 accounts = []
             candidates = []

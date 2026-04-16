@@ -5,6 +5,7 @@ from functools import lru_cache
 from .apollo import ApolloClient
 from .campaign import CampaignGenerator, OpportunityScorer
 from .claude_discovery import ClaudeCompetitorDiscovery
+from .claude_signals import ClaudeSignalDiscovery
 from .config import get_settings
 from .gemini import GeminiReasoner
 from .monitor import CompetitorMonitor
@@ -37,7 +38,14 @@ def get_agent() -> DisplacementAgent:
     reasoner = GeminiReasoner(settings.google_cloud_project, settings.google_cloud_location, settings.vertex_model)
     return DisplacementAgent(
         repository=get_repository(),
-        monitor=CompetitorMonitor(reasoner=reasoner, demo_mode=settings.demo_mode),
+        monitor=CompetitorMonitor(
+            reasoner=reasoner,
+            demo_mode=settings.demo_mode,
+            claude_signal_discovery=ClaudeSignalDiscovery(
+                max_budget_usd=settings.claude_max_budget_usd,
+                timeout_seconds=settings.claude_timeout_seconds,
+            ),
+        ),
         apollo=ApolloClient(api_key=settings.apollo_api_key, demo_mode=settings.demo_mode),
         scorer=OpportunityScorer(),
         prospector=ClaudeApolloProspector(
@@ -52,4 +60,6 @@ def get_agent() -> DisplacementAgent:
             claude_max_budget_usd=settings.claude_max_budget_usd,
             claude_timeout_seconds=settings.claude_timeout_seconds,
         ),
+        max_competitors_per_scan=settings.max_competitors_per_scan,
+        max_customers_per_competitor=settings.max_customers_per_competitor,
     )

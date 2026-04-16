@@ -3,6 +3,7 @@ from pathlib import Path
 from app.apollo import ApolloClient
 from app.campaign import CampaignGenerator, OpportunityScorer
 from app.claude_discovery import ClaudeCompetitorDiscovery
+from app.claude_signals import ClaudeSignalDiscovery
 from app.demo_data import demo_contacts
 from app.gemini import GeminiReasoner
 from app.models import ApolloAccount, CompanyProfile, Competitor, Severity, SignalType, SourceEvidence
@@ -77,6 +78,75 @@ def test_claude_discovery_falls_back_on_invalid_output() -> None:
     assert result.source == "fallback"
     assert result.error
     assert len(result.competitors) >= 1
+
+
+def test_claude_signal_discovery_parses_only_article_backed_sources() -> None:
+    discovery = ClaudeSignalDiscovery(
+        runner=lambda _command, _prompt, _timeout: """
+        [
+          {"title":"AcmeCRM outage frustrates customers","url":"https://status.acme.test/incidents/123",
+           "snippet":"AcmeCRM reported an outage that disrupted users.","published_at":"2026-04-15"},
+          {"title":"No URL","url":"","snippet":"ignore me"},
+          {"title":"Bad URL","url":"not-a-url","snippet":"ignore me"},
+          {"title":"Missing snippet","url":"https://example.com/no-snippet"}
+        ]
+        """
+    )
+
+    evidence = discovery.discover_evidence(Competitor(name="AcmeCRM"), limit=2)
+
+    assert len(evidence) == 1
+    assert evidence[0].title == "AcmeCRM outage frustrates customers"
+    assert evidence[0].url == "https://status.acme.test/incidents/123"
+    assert evidence[0].published_at is not None
+
+
+def test_claude_signal_discovery_logs_raw_and_accepted_counts(caplog) -> None:
+    discovery = ClaudeSignalDiscovery(
+        runner=lambda _command, _prompt, _timeout: """
+        [{"title":"AcmeCRM pricing increase","url":"https://example.com/pricing",
+          "snippet":"Customers discuss pricing pressure."}]
+        """
+    )
+
+    with caplog.at_level("INFO", logger="app.claude_signals"):
+        evidence = discovery.discover_evidence(Competitor(name="AcmeCRM"), limit=2)
+
+    assert len(evidence) == 1
+    assert "claude_signal_discovery.raw_response" in caplog.text
+    assert "accepted_sources=1" in caplog.text
+
+
+def test_real_mode_monitor_does_not_save_fallback_search_urls_without_claude_sources() -> None:
+    monitor = CompetitorMonitor(
+        reasoner=GeminiReasoner(None, "global", "test"),
+        demo_mode=False,
+        claude_signal_discovery=ClaudeSignalDiscovery(runner=lambda _command, _prompt, _timeout: "[]"),
+    )
+
+    signals = monitor.discover_signals(Competitor(name="AcmeCRM"))
+
+    assert signals == []
+
+
+def test_real_mode_monitor_classifies_claude_article_sources() -> None:
+    monitor = CompetitorMonitor(
+        reasoner=GeminiReasoner(None, "global", "test"),
+        demo_mode=False,
+        claude_signal_discovery=ClaudeSignalDiscovery(
+            runner=lambda _command, _prompt, _timeout: """
+            [{"title":"AcmeCRM pricing increase hits customers",
+              "url":"https://example.com/acme-pricing",
+              "snippet":"Customers complain about renewal cost after a pricing increase."}]
+            """
+        ),
+    )
+
+    signals = monitor.discover_signals(Competitor(name="AcmeCRM"))
+
+    assert len(signals) == 1
+    assert signals[0].type == SignalType.PRICE_INCREASE
+    assert signals[0].evidence[0].url == "https://example.com/acme-pricing"
 
 
 def test_campaign_prompt_is_draft_only() -> None:
@@ -171,3 +241,21 @@ def test_scan_creates_opportunities_then_generates_selected_decision_maker_email
     assert "15-minute" in draft.email_body
     assert "Apollo" in draft.email_body.split(".")[-2]
     assert len(draft.email_body.split()) < 100
+
+
+def test_scan_limits_real_work_to_four_competitors_and_five_customers_each(tmp_path: Path) -> None:
+    agent = make_agent(tmp_path)
+    agent.max_competitors_per_scan = 4
+    agent.max_customers_per_competitor = 5
+    agent.repository.save_company_profile(CompanyProfile(company_name="Apollo"))
+    for index in range(6):
+        domains = [f"customer-{index}-{customer}.example" for customer in range(7)]
+        agent.add_competitor(f"Competitor {index}", "Sales engagement", customer_domains=domains)
+
+    result = agent.run_scan()
+
+    assert result.competitors_scanned == 4
+    assert result.signals_created == 4
+    assert result.opportunities_created == 20
+    assert len(agent.repository.list_signals()) == 4
+    assert len(agent.repository.list_opportunities()) == 20

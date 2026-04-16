@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     claude_max_budget_usd: float | None = Field(default=0.25, alias="CLAUDE_MAX_BUDGET_USD")
     claude_timeout_seconds: int = Field(default=45, alias="CLAUDE_TIMEOUT_SECONDS")
     claude_draft_emails: bool = Field(default=False, alias="CLAUDE_DRAFT_EMAILS")
-    demo_mode: bool = Field(default=True, alias="DEMO_MODE")
+    max_competitors_per_scan: int = Field(default=4, alias="MAX_COMPETITORS_PER_SCAN")
+    max_customers_per_competitor: int = Field(default=5, alias="MAX_CUSTOMERS_PER_COMPETITOR")
+    demo_mode: bool = Field(default=False, alias="DEMO_MODE")
     data_path: Path = Field(default=Path(".data/displacement-agent.json"), alias="DATA_PATH")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
