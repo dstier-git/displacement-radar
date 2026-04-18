@@ -73,16 +73,16 @@
   const links = graph.links || [];
   const ns = 'http://www.w3.org/2000/svg';
   const nodeWidth = 152;
-  const columnGap = 52;
-  const rowGap = 92;
-  const marginX = 104;
-  const marginY = 70;
-  const renderedScale = 0.72;
+  const nodeHeight = 54;
+  const padding = 150;
+  const renderedScale = 0.68;
+  const layerY = { competitor: 150, customer: 390, person: 640 };
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
   const neighbors = new Map(nodes.map((node) => [node.id, new Set([node.id])]));
   let activeFilter = 'all';
   let selectedId = null;
-  let canvas = { width: 1400, height: 680 };
+  let canvas = { width: 1800, height: 880 };
+  let layoutReady = false;
   let isPanning = false;
   let suppressClick = false;
   let panStart = { x: 0, y: 0, left: 0, top: 0 };
@@ -103,27 +103,44 @@
     return element;
   }
 
-  function rowsFor(type, count) {
-    if (type === 'competitor') return count > 10 ? 2 : 1;
-    if (type === 'customer') return Math.min(4, Math.max(2, Math.ceil(count / 10)));
-    if (type === 'person') return Math.min(5, Math.max(2, Math.ceil(count / 10)));
-    return 1;
-  }
-
-  function yStartFor(type, customerRows) {
-    if (type === 'competitor') return marginY;
-    if (type === 'customer') return 238;
-    if (type === 'person') return 238 + customerRows * rowGap + 120;
-    return marginY;
-  }
-
   function applyCanvasSize() {
     svg.setAttribute('viewBox', `0 0 ${canvas.width} ${canvas.height}`);
     svg.style.width = `${Math.round(canvas.width * renderedScale)}px`;
     svg.style.height = `${Math.round(canvas.height * renderedScale)}px`;
   }
 
+  function hashValue(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0) / 4294967295;
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function curvedPath(link) {
+    const source = nodeById.get(link.source);
+    const target = nodeById.get(link.target);
+    if (!source || !target) return '';
+    const dx = target.x - source.x;
+    const dy = target.y - source.y;
+    const distance = Math.hypot(dx, dy) || 1;
+    const bend = (hashValue(`${link.source}:${link.target}`) - 0.5) * 95;
+    const cx = (source.x + target.x) / 2 - (dy / distance) * bend;
+    const cy = (source.y + target.y) / 2 + (dx / distance) * bend;
+    return `M ${source.x} ${source.y} Q ${cx} ${cy} ${target.x} ${target.y}`;
+  }
+
   function layoutNodes() {
+    canvas = {
+      width: Math.max(1800, Math.min(5200, 820 + nodes.length * 48)),
+      height: Math.max(880, Math.min(1500, 760 + nodes.length * 7)),
+    };
+
     const ordered = [...nodes].sort((a, b) => {
       const typeOrder = { competitor: 0, customer: 1, person: 2 };
       return (typeOrder[a.type] - typeOrder[b.type]) || String(a.label).localeCompare(String(b.label));
@@ -134,30 +151,75 @@
       return acc;
     }, {});
 
-    const customerRows = rowsFor('customer', grouped.customer?.length || 0);
-    let maxColumns = 1;
-    let maxY = 0;
-
     Object.entries(grouped).forEach(([type, list]) => {
-      const rowCount = rowsFor(type, list.length);
-      const columns = Math.max(1, Math.ceil(list.length / rowCount));
-      const yStart = yStartFor(type, customerRows);
-      const yValues = Array.from({ length: rowCount }, (_, index) => yStart + index * rowGap);
-      maxColumns = Math.max(maxColumns, columns);
-      maxY = Math.max(maxY, yValues[yValues.length - 1] || yStart);
+      const bandY = layerY[type] || canvas.height / 2;
       list.forEach((node, index) => {
-        const row = index % rowCount;
-        const column = Math.floor(index / rowCount);
-        node.x = marginX + column * (nodeWidth + columnGap);
-        node.y = yValues[row];
+        const spread = canvas.width - padding * 2;
+        const baseX = padding + ((index + 0.5) / Math.max(1, list.length)) * spread;
+        node.x = clamp(baseX + (hashValue(`${node.id}:x`) - 0.5) * 220, padding, canvas.width - padding);
+        node.y = clamp(bandY + (hashValue(`${node.id}:y`) - 0.5) * 210, padding / 2, canvas.height - padding / 2);
+        node.vx = 0;
+        node.vy = 0;
       });
     });
 
-    canvas = {
-      width: Math.max(1400, marginX * 2 + maxColumns * nodeWidth + Math.max(0, maxColumns - 1) * columnGap),
-      height: Math.max(680, maxY + marginY),
-    };
+    for (let iteration = 0; iteration < 240; iteration += 1) {
+      const alpha = 1 - iteration / 240;
+
+      for (let i = 0; i < ordered.length; i += 1) {
+        for (let j = i + 1; j < ordered.length; j += 1) {
+          const a = ordered[i];
+          const b = ordered[j];
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let distance = Math.hypot(dx, dy) || 1;
+          const repel = Math.min(3.4, 9000 / (distance * distance)) * alpha;
+          const nx = dx / distance;
+          const ny = dy / distance;
+          a.vx -= nx * repel;
+          a.vy -= ny * repel;
+          b.vx += nx * repel;
+          b.vy += ny * repel;
+
+          if (Math.abs(dx) < nodeWidth + 32 && Math.abs(dy) < nodeHeight + 30) {
+            const push = ((nodeWidth + 32 - Math.abs(dx)) + (nodeHeight + 30 - Math.abs(dy))) * 0.006 * alpha;
+            a.vx -= nx * push;
+            a.vy -= ny * push;
+            b.vx += nx * push;
+            b.vy += ny * push;
+          }
+        }
+      }
+
+      links.forEach((link) => {
+        const source = nodeById.get(link.source);
+        const target = nodeById.get(link.target);
+        if (!source || !target) return;
+        const dx = target.x - source.x;
+        const dy = target.y - source.y;
+        const distance = Math.hypot(dx, dy) || 1;
+        const targetDistance = link.type === 'person' ? 170 : 265;
+        const spring = (distance - targetDistance) * 0.018 * alpha;
+        const nx = dx / distance;
+        const ny = dy / distance;
+        source.vx += nx * spring;
+        source.vy += ny * spring;
+        target.vx -= nx * spring;
+        target.vy -= ny * spring;
+      });
+
+      ordered.forEach((node) => {
+        node.vy += ((layerY[node.type] || canvas.height / 2) - node.y) * 0.010 * alpha;
+        node.vx += (canvas.width / 2 - node.x) * 0.0005 * alpha;
+        node.vx *= 0.82;
+        node.vy *= 0.82;
+        node.x = clamp(node.x + node.vx, padding, canvas.width - padding);
+        node.y = clamp(node.y + node.vy, padding / 2, canvas.height - padding / 2);
+      });
+    }
+
     applyCanvasSize();
+    layoutReady = true;
   }
 
   function nodeClasses(node) {
@@ -191,17 +253,14 @@
       return;
     }
 
-    layoutNodes();
+    if (!layoutReady) layoutNodes();
 
     links.forEach((link) => {
       const source = nodeById.get(link.source);
       const target = nodeById.get(link.target);
       if (!source || !target) return;
-      const line = createSvg('line', {
-        x1: source.x,
-        y1: source.y,
-        x2: target.x,
-        y2: target.y,
+      const line = createSvg('path', {
+        d: curvedPath(link),
         class: linkClasses(link)
       });
       svg.appendChild(line);

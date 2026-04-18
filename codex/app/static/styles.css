@@ -84,7 +84,7 @@ th { color: #7dd3fc; }
 .graph-scroll { min-height: 24rem; max-height: 34rem; overflow: auto; border-radius: .5rem; background: rgba(2,6,23,.48); border: 1px solid rgba(255,255,255,.09); cursor: grab; touch-action: none; user-select: none; }
 .graph-scroll.dragging { cursor: grabbing; }
 #relationship-graph { display: block; max-width: none; background: transparent; }
-.graph-link { stroke: rgba(226,232,240,.38); stroke-width: 2; }
+.graph-link { fill: none; stroke: rgba(226,232,240,.38); stroke-width: 2; }
 .graph-link.customer { stroke: rgba(125,211,252,.48); }
 .graph-link.person { stroke: rgba(134,239,172,.42); }
 .graph-link.filtered, .graph-link.dimmed { opacity: .18; }

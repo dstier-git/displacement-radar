@@ -1,5 +1,8 @@
 .DS_Store
 
+# Node / frontend deps (never commit)
+**/node_modules/
+
 # Local Python environments / caches
 .venv/
 venv/
@@ -10,5 +13,8 @@ __pycache__/
 # Local tool state (do not commit)
 .omx/
 .data/
+
+# Seed/demo data that may contain proprietary research
+codex/app/demo_snapshot.json
 
 .gstack/
