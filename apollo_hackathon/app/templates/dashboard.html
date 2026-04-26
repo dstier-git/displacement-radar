@@ -395,7 +395,7 @@
 <section class="panel action-panel">
   <div>
     <h2>Scan and report</h2>
-    <p class="muted">Run codex's scanner across the Claude-discovered competitors, then export the landscape report.</p>
+    <p class="muted">Run the scanner across the Claude-discovered competitors, then export the landscape report.</p>
     {% if competitors and not scan_runs %}
       <p class="notice warning">Competitors are loaded, but no scan has completed yet. Run scan to ask Claude for article-backed signals.</p>
     {% elif scan_runs and scan_runs[0].signals_created == 0 %}

@@ -158,12 +158,12 @@ def find_signal_prospects(
     settings = get_settings()
     if settings.prefer_claude_mcp_prospecting:
         if not settings.claude_mcp_config:
-            msg = "Claude MCP is enabled, but CLAUDE_MCP_CONFIG is not set. Export CLAUDE_MCP_CONFIG to codex/claude.mcp.json and restart."
+            msg = "Claude MCP is enabled, but CLAUDE_MCP_CONFIG is not set. Export CLAUDE_MCP_CONFIG to apollo_hackathon/claude.mcp.json and restart."
             return RedirectResponse(f"/signals/{signal_id}?error={quote(msg)}", status_code=status.HTTP_303_SEE_OTHER)
         if any(token in settings.claude_mcp_config for token in ("{", "}", "\n")):
             msg = (
                 "CLAUDE_MCP_CONFIG must be a FILE PATH (not JSON contents). "
-                "Set it to /Users/janetmillerstier/Code/apollo-hackathon/codex/claude.mcp.json and restart."
+                "Set it to apollo_hackathon/claude.mcp.json and restart."
             )
             return RedirectResponse(f"/signals/{signal_id}?error={quote(msg)}", status_code=status.HTTP_303_SEE_OTHER)
         config_path = Path(settings.claude_mcp_config).expanduser()
