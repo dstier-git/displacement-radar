@@ -15,6 +15,6 @@ __pycache__/
 .data/
 
 # Seed/demo data that may contain proprietary research
-codex/app/demo_snapshot.json
+apollo_hackathon/app/demo_snapshot.json
 
 .gstack/
