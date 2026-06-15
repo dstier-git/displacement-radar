@@ -1,16 +1,29 @@
 # displacement-radar
 
-Displacement signal detection and outbound draft generation.
+Draft-only competitor displacement intelligence for seller teams.
 Built during the Apollo x Google Cloud Hackathon.
 
-## What this repo does
+## What It Does
 
-This project helps a seller team:
+`displacement-radar` helps a seller team turn competitor pain signals into reviewed outbound drafts.
 
-- discover or enter competitors
-- identify recent competitor signals from public sources
-- find likely impacted accounts and buyer personas via Apollo
-- generate draft outreach emails tied to those signals
+- Discover or enter competitors.
+- Identify recent competitor signals from public sources.
+- Map signals to likely affected accounts and buyer personas.
+- Use Apollo to find decision makers and contact data.
+- Generate evidence-backed outreach drafts for human review.
+
+The product boundary is intentionally draft-only: it does not send emails, create Gmail messages, or enroll contacts in sequences without external human action.
+
+## Main Workflow
+
+1. Enter your company and product.
+2. Add competitors manually or use model-assisted competitor discovery.
+3. Run a scan to collect and rank competitor signals.
+4. Review signal-backed opportunities and impacted accounts.
+5. Select decision makers found through Apollo.
+6. Generate draft outreach for selected contacts.
+7. Review, edit, and approve any external action outside the app.
 
 ## Preview screenshots from frontend
 **Using the Apollo MCP to identify decision makers at potential customer companies (from auto-discovered displacement opportunities):**
@@ -31,25 +44,7 @@ This project helps a seller team:
 <img width="1054" height="456" alt="account map" src="https://github.com/user-attachments/assets/96f098ee-a27a-4cb3-9d1b-5dbbcc796b33" />
 
 
-## Current repo layout
-
-- `apollo_hackathon/` - main FastAPI app and tests
-- `apollo_hackathon_cursor/` - parallel Cursor-oriented variant
-- `aahan/` - earlier Node/React prototype
-
-If you want one canonical app to run today, start with `apollo_hackathon/`.
-
-## Main workflow (apollo_hackathon)
-
-1. Enter your company and product.
-2. Add competitors manually or use model-assisted competitor discovery.
-3. Run a scan to collect and rank competitor signals.
-4. Build opportunities and find impacted prospects.
-5. Generate outreach drafts for selected contacts.
-6. Review/edit before any external action.
-
-- 
-## Quickstart (main app)
+## Quickstart
 
 ```bash
 python -m venv .venv
@@ -60,20 +55,23 @@ uvicorn apollo_hackathon.app.main:app --reload
 
 Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
+The canonical app lives in `apollo_hackathon/`.
+
 ## Configuration
 
 Copy and fill values from:
 
 - `apollo_hackathon/.env.example`
 
-Key variables in `apollo_hackathon/.env.example`:
+Key variables:
 
-- `APOLLO_API_KEY` - Apollo account/contact lookup
-- `OPENAI_API_KEY` - OpenAI web-search prospecting
-- `CLAUDE_MCP_CONFIG` - path to MCP config file
-- `PREFER_CLAUDE_MCP_PROSPECTING` - toggle Claude MCP prospecting path
-- `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION` / `VERTEX_MODEL` - Vertex/Gemini options
-- `DATA_PATH` / `SEED_DATA_PATH` - local app data and seed snapshot
+- `APOLLO_API_KEY` - Apollo account/contact lookup.
+- `OPENAI_API_KEY` - OpenAI web-search prospecting.
+- `CLAUDE_MCP_CONFIG` - path to a Claude MCP config file.
+- `PREFER_CLAUDE_MCP_PROSPECTING` - prefer Claude MCP prospecting when configured.
+- `CLAUDE_DRAFT_EMAILS` - use Claude for draft email generation when configured.
+- `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION` / `VERTEX_MODEL` - Vertex/Gemini options.
+- `DATA_PATH` / `SEED_DATA_PATH` - local app data and seed snapshot paths.
 
 ## Testing
 
