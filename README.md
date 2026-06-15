@@ -9,10 +9,8 @@ This project helps a seller team:
 
 - discover or enter competitors
 - identify recent competitor signals from public sources
-- find likely impacted accounts and buyer personas
+- find likely impacted accounts and buyer personas via Apollo
 - generate draft outreach emails tied to those signals
-
-The core focus is speed-to-draft with human review, not fully automated outbound.
 
 ## Current repo layout
 
@@ -31,22 +29,7 @@ If you want one canonical app to run today, start with `apollo_hackathon/`.
 5. Generate outreach drafts for selected contacts.
 6. Review/edit before any external action.
 
-## What is implemented today
-
-- FastAPI web app with HTML templates
-- competitor and signal management
-- displacement relationship graph output at `/graph/displacement.json`
-- markdown + Mermaid competitive landscape reports
-- optional Apollo account/contact lookup
-- optional OpenAI web-search prospecting
-- optional Claude MCP-assisted discovery/prospecting
-- optional Vertex/Gemini grounding for live signal discovery
-
-## What is not accurate to claim right now
-
-- no Gmail API delivery flow in this codebase
-- no dedicated browser-scraping pipeline (the app primarily uses model-assisted web discovery/grounding)
-
+- 
 ## Quickstart (main app)
 
 ```bash
@@ -63,7 +46,6 @@ Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 Copy and fill values from:
 
 - `apollo_hackathon/.env.example`
-- `aahan/backend/.env.example` (only if you run the prototype)
 
 Key variables in `apollo_hackathon/.env.example`:
 
@@ -81,8 +63,3 @@ pytest
 ```
 
 `pyproject.toml` is configured to run tests under `apollo_hackathon/tests`.
-
-## Notes before publishing
-
-- keep real API keys out of git (only commit `.env.example`)
-- generated prospect/contact data may be sensitive; avoid committing local data artifacts
