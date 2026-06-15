@@ -12,6 +12,25 @@ This project helps a seller team:
 - find likely impacted accounts and buyer personas via Apollo
 - generate draft outreach emails tied to those signals
 
+## Preview screenshots from frontend
+**Using the Apollo MCP to identify decision makers at potential customer companies (from auto-discovered displacement opportunities):**
+
+<img width="1426" height="869" alt="email drafts" src="https://github.com/user-attachments/assets/443f75ca-24d2-46eb-b4f3-1da4175a9a7b" />
+
+**Comprehensive competitive landscape report, generated from web-scraping, Claude-reviewed competitorrs, and Apollo GTM tools:**
+
+<img width="1351" height="869" alt="competitive landscape" src="https://github.com/user-attachments/assets/f1a082db-8cd9-4910-a5f1-b2d91f18e0cd" />
+
+**Opportunity graphs:**
+
+<img width="1382" height="344" alt="change graph" src="https://github.com/user-attachments/assets/90d87c2c-d73a-4769-ac47-f1f4251f9359" />
+<img width="401" height="261" alt="signal mix graph" src="https://github.com/user-attachments/assets/badf4030-3a86-440a-85a6-cf72aa94e697" />
+
+**Competitive landscape visualizations:**
+
+<img width="1054" height="456" alt="account map" src="https://github.com/user-attachments/assets/96f098ee-a27a-4cb3-9d1b-5dbbcc796b33" />
+
+
 ## Current repo layout
 
 - `apollo_hackathon/` - main FastAPI app and tests
